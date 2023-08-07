@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 
 #include <rz_il/rz_il_opbuilder_begin.h>
+#include <rz_util //rz_float.h>
 
 #define LOAD32(addr) LOADW(32, addr)
 
@@ -56,6 +57,7 @@ REG_FIELD(PSW, V, 30, 1)
 REG_FIELD(PSW, SV, 29, 1)
 REG_FIELD(PSW, AV, 28, 1)
 REG_FIELD(PSW, SAV, 27, 1)
+REG_FIELD(PSW, RM, 24, 2)
 REG_FIELD(PSW, PRS, 12, 2)
 REG_FIELD(PSW, IO, 10, 2)
 REG_FIELD(PSW, IS, 9, 1)
@@ -308,16 +310,6 @@ static RzAnalysisLiftedILOp fret() {
 	return SEQ5(SETL("A11", VARG("a11")), EA, A11, A10, PC);
 }
 
-static RzILOpPure *is_inf(RzILOpPure *val) {
-	// TODO: check for float Inf
-	return IL_FALSE;
-}
-
-static RzILOpPure *is_nan(RzILOpPure *val) {
-	// TODO: check for float NaN
-	return IL_FALSE;
-}
-
 static RzILOpPure *sign_32bit(RzILOpPure *val) {
 	// TODO: check for signed infinity
 	return IL_FALSE;
@@ -336,6 +328,14 @@ static const ut32 HP_POS_INFINITY = 0x7c00;
 
 static const ut32 NEG_INFINITY = 0xff800000;
 static const ut32 POS_INFINITY = 0x7f800000;
+
+/** TODO: what is -0 +0 f_real
+ */
+static RzILOpPure *denorm_to_zero(RzILOpFloat *x) {
+	return ITE(AND(SLT(x, F32(0)), SGT(x, F32(powf(-2, -126)))), F32(-0),
+		ITE(AND(SGT(x, F32(0)), SLT(x, F32(powf(2, -126)))), F32(+0),
+			x));
+}
 
 /**
  * \brief Convert single precision to a half precision
@@ -361,7 +361,7 @@ static RzAnalysisLiftedILOp ftohp(csh handle, cs_insn *insn) {
 	// D[c][14:10] = 1FH;
 	// D[c][9:8] = D[a][22:21];
 	// D[c][7:0] = D[a][7:0];
-	//// Ensure NaN value is preserved
+	// Ensure NaN value is preserved
 	// if ((D[c][9:0] == 0)) then {
 	//	D[c][8] = 1B;
 	// }
@@ -372,15 +372,17 @@ static RzAnalysisLiftedILOp ftohp(csh handle, cs_insn *insn) {
 	RzILOpEffect *nan_eff = SETG(cname,
 		ITE(EQ(bits(DUP(c), 0, 10), U32(0)), bits_updated(c, 8, 1, U32(1)), DUP(c)));
 
-	// TODO: ftohp/else_eff
 	// f = denorm_to_zero(D[a]);
 	// f_rounded = ieee754_round_16bit(f, PSW.RM);
-	//// Handle overflow & underflow and convert to 16-bit format
+	// Handle overflow & underflow and convert to 16-bit format
 	// D[a][15:0] = ieee754_16bit_format(f_rounded);
-	RzILOpEffect *else_eff = SETG(cname, U32(0));
+	// TODO: no RZ_FLOAT_IEEE754_BIN_16?
+	//	RzILOpPure *f = denorm_to_zero(FLOATV16(DUP(a)));
+	//	RzILOpPure *f_rounded = FROUND(PSW_RM(), f);
+	RzILOpEffect *else_eff = SETG(cname, bits_updated(DUP(a), 0, 16, U16(0)));
 
-	return BRANCH(is_inf(a), inf_eff,
-		BRANCH(is_nan(a), nan_eff, else_eff));
+	return BRANCH(IS_FINF(FLOATV32(a)), inf_eff,
+		BRANCH(IS_FNAN(FLOATV32(DUP(a))), nan_eff, else_eff));
 }
 
 static RzAnalysisLiftedILOp rz_analysis_tricore_il_op(RzAnalysis *a, cs_insn *insn, csh handle, cs_mode mode) {

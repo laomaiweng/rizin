@@ -385,30 +385,28 @@ static RzAnalysisLiftedILOp ftohp(csh handle, cs_insn *insn) {
 		BRANCH(IS_FNAN(FLOATV32(DUP(a))), nan_eff, else_eff));
 }
 
+static RzILOpPure *f_real(RzILOpFloat *x) {
+	return x;
+}
+
+static RzAnalysisLiftedILOp ftoiz(csh handle, cs_insn *insn) {
+	RzILOpPure *a = get_reg(handle, insn, 1);
+	const char *cname = get_regname(handle, insn, 0);
+	return SETG(cname, ITE(IS_FINF(FLOATV32(a)), U32(0), ITE(SGT(f_real(DUP(a)), U32(0x7FFFFFFF)), U32(0x7FFFFFFF), ITE(SLT(f_real(DUP(a)), U32(0x80000000)), U32(0x80000000), F2SINT(32, RZ_FLOAT_RMODE_RTZ, DUP(a))))));
+}
+
 static RzAnalysisLiftedILOp rz_analysis_tricore_il_op(RzAnalysis *a, cs_insn *insn, csh handle, cs_mode mode) {
 	switch (insn->id) {
-	default: {
-		break;
-	}
-	case TRICORE_INS_FCALLI: {
-		return fast_call(insn, mode, VARG(cs_reg_name(handle, get_op(insn, 0)->reg)));
-	}
+	default: break;
+	case TRICORE_INS_FCALLI: return fast_call(insn, mode, VARG(cs_reg_name(handle, get_op(insn, 0)->reg)));
 	case TRICORE_INS_FCALLA:
-	case TRICORE_INS_FCALL: {
-		return fast_call(insn, mode, U32(get_op(insn, 0)->imm));
-	}
-	case TRICORE_INS_CALLI: {
-		return call_abs(insn, mode, VARG(cs_reg_name(handle, get_op(insn, 0)->reg)));
-	}
+	case TRICORE_INS_FCALL: return fast_call(insn, mode, U32(get_op(insn, 0)->imm));
+	case TRICORE_INS_CALLI: return call_abs(insn, mode, VARG(cs_reg_name(handle, get_op(insn, 0)->reg)));
 	case TRICORE_INS_CALLA:
-	case TRICORE_INS_CALL: {
-		return call_abs(insn, mode, U32(get_op(insn, 0)->imm));
-	}
-	case TRICORE_INS_FRET: {
-		return fret();
-	}
+	case TRICORE_INS_CALL: return call_abs(insn, mode, U32(get_op(insn, 0)->imm));
+	case TRICORE_INS_FRET: return fret();
 	case TRICORE_INS_FTOHP: return ftohp(handle, insn);
-	case TRICORE_INS_FTOIZ:
+	case TRICORE_INS_FTOIZ: return ftoiz(handle, insn);
 	case TRICORE_INS_FTOI:
 	case TRICORE_INS_FTOQ31Z:
 	case TRICORE_INS_FTOQ31:

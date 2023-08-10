@@ -1841,28 +1841,9 @@ static void ds_show_fn_vars_lines(
 	RzDisasmState *ds,
 	RzAnalysisFunction *f,
 	RzAnalysisFcnVarsCache *vars_cache) {
-	if (f->has_debuginfo) {
-		void **it;
-		rz_pvector_foreach (&f->vars, it) {
-			// fold same-typed variables
-			ut32 iter_mov = fold_variables(ds->core, ds, iter);
-			if (iter_mov > 0) {
-				int cnt = 0;
-				while (cnt++ < iter_mov - 1) {
-					++it;
-				}
-				continue;
-			}
-			ds_show_fn_var_line(ds, f, *it);
-		}
-		return;
-	}
-
-	RzList *all_vars = vars_cache->regvars;
-	rz_list_join(all_vars, vars_cache->stackvars);
 	RzAnalysisVar *var;
 	RzListIter *iter;
-	rz_list_foreach (all_vars, iter, var) {
+	rz_list_foreach (vars_cache->sorted_vars, iter, var) {
 		// fold same-typed variables
 		ut32 iter_mov = fold_variables(ds->core, ds, iter);
 		if (iter_mov > 0) {
@@ -1901,7 +1882,7 @@ static void ds_show_functions(RzDisasmState *ds) {
 	int o_varsum = ds->show_varsum;
 	if (ds->interactive && !o_varsum) {
 		int padding = 10;
-		int numvars = vars_cache.stackvars->length + vars_cache.regvars->length;
+		int numvars = rz_list_length(vars_cache.sorted_vars);
 		ds->show_varsum = (numvars > padding) && ((numvars + padding) > ds->nlines);
 	}
 	// show function's realname in the signature if realnames are enabled
@@ -1974,9 +1955,7 @@ static void ds_show_functions(RzDisasmState *ds) {
 
 	if (ds->show_vars) {
 		if (ds->show_varsum && ds->show_varsum != -1) { // show_varsum = 1 and 2
-			RzList *all_vars = vars_cache.stackvars;
-			rz_list_join(all_vars, vars_cache.regvars);
-			printVarSummary(ds, all_vars);
+			printVarSummary(ds, vars_cache.sorted_vars);
 		} else {
 			ds_show_fn_vars_lines(ds, f, &vars_cache);
 		}

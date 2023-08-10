@@ -340,7 +340,10 @@ static bool RzBinDwarfLineHeader_parse(
 	}
 
 	U8_OR_RET_FALSE(hdr->opcode_base);
-	assert(hdr->opcode_base != 0);
+	if (hdr->opcode_base == 0) {
+		RZ_LOG_ERROR("DWARF line hdr opcode base 0 is not supported\n");
+		return false;
+	}
 	if (hdr->opcode_base > 1) {
 		hdr->std_opcode_lengths = calloc(sizeof(ut8), hdr->opcode_base - 1);
 		RET_FALSE_IF_FAIL(hdr->std_opcode_lengths);
@@ -418,7 +421,7 @@ static bool RzBinDwarfLineOp_parse_std(
 	RzBuffer *buffer,
 	RzBinDwarfLineOp *op,
 	const RzBinDwarfLineHeader *hdr,
-	enum DW_LNS opcode,
+	DW_LNS opcode,
 	bool big_endian) {
 	rz_return_val_if_fail(op && hdr && buffer, false);
 	op->type = RZ_BIN_DWARF_LINE_OP_TYPE_STD;

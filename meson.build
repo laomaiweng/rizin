@@ -238,7 +238,7 @@ if r.returncode() == 1 and get_option('subprojects_check')
   error(subproject_clean_error_msg)
 endif
 
-libdemangle_options = ['default_library=static', 'werror=false']
+libdemangle_options = ['default_library=static']
 if get_option('use_gpl')
   libdemangle_options += 'use_gpl=true'
 else

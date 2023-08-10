@@ -283,7 +283,6 @@ bool test_dwarf4_cpp_multiple_modules(void) {
 	check_die_abbr_code(10);
 	DIE(++i);
 	check_die_abbr_code(0);
-	DIE(++i);
 
 	UNIT(1);
 	hdr = cu->hdr;

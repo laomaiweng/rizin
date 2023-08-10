@@ -382,7 +382,7 @@ RZ_API void rz_bin_dwarf_location_fini(RZ_BORROW RZ_NONNULL RzBinDwarfLocation *
 	case RzBinDwarfLocationKind_COMPOSITE:
 		rz_vector_free(self->composite);
 		break;
-	case RzBinDwarfLocationKind_LOCLIST: // fallthrough
+	case RzBinDwarfLocationKind_LOCLIST:
 	default: break;
 	}
 }
@@ -400,8 +400,18 @@ RZ_API void rz_bin_dwarf_location_free(RZ_BORROW RZ_NONNULL RzBinDwarfLocation *
  * \param self RzBinDwarfLocation instance
  * \return RzBinDwarfLocation instance on success, NULL otherwise
  */
-RZ_API RZ_OWN RzBinDwarfLocation *rz_bin_dwarf_location_clone(RZ_BORROW RZ_NONNULL RzBinDwarfLocation *self) {
+RZ_API RZ_OWN RzBinDwarfLocation *rz_bin_dwarf_location_clone(
+	RZ_BORROW RZ_NONNULL RzBinDwarfLocation *self) {
+	rz_return_val_if_fail(self &&
+			self->kind != RzBinDwarfLocationKind_EVALUATION_WAITING,
+		NULL);
 	RzBinDwarfLocation *loc = RZ_NEWCOPY(RzBinDwarfLocation, self);
-	assert(loc->kind != RzBinDwarfLocationKind_EVALUATION_WAITING);
+	switch (loc->kind) {
+	case RzBinDwarfLocationKind_COMPOSITE:
+		loc->composite = rz_vector_clone(self->composite);
+		break;
+	default:
+		break;
+	}
 	return loc;
 }

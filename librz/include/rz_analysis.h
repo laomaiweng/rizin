@@ -451,7 +451,8 @@ typedef struct {
 	HtUP /*<ut64, const RzAnalysisDwarfFunction *>*/ *function_by_addr; ///< Store all functions parsed from DWARF by address (some functions may have the same address)
 	HtUP /*<ut64, RzCallable *>*/ *callable_by_offset; ///< Store all callables parsed from DWARF by DIE offset
 	HtUP /*<ut64, RzType *>*/ *type_by_offset; ///< Store all RzType parsed from DWARF by DIE offset
-	HtUP /*<ut64, const RzBaseType *>*/ *base_type_by_offset; ///< Store all RzBaseType parsed from DWARF by DIE offset
+	HtUP /*<ut64, RzBaseType *>*/ *base_type_by_offset; ///< Store all RzBaseType parsed from DWARF by DIE offset
+	HtPP /*<const char*, RzPVector<const RzBaseType *>>*/ *base_type_by_name; ///< Store all RzBaseType parsed from DWARF by DIE offset
 	DWARF_RegisterMapping dwarf_register_mapping; ///< Store the mapping function between DWARF registers number and register name in current architecture
 	RzBinDwarf *dw; ///< Holds ownership of RzBinDwarf, avoid releasing it prematurely
 } RzAnalysisDebugInfo;
@@ -661,6 +662,14 @@ typedef enum {
 	RZ_ANALYSIS_VAR_STORAGE_EVAL_PENDING,
 } RzAnalysisVarStorageType;
 
+struct rz_analysis_var_storage_t;
+
+typedef struct {
+	ut32 offset_in_bits;
+	ut32 size_in_bits;
+	struct rz_analysis_var_storage_t *storage;
+} RzAnalysisVarStoragePiece;
+
 /**
  * Describes the location whether the contents of a variable are stored
  */
@@ -679,6 +688,7 @@ typedef struct rz_analysis_var_storage_t {
 		 * respective RzAnalysis.constpool.
 		 */
 		const char *reg;
+		RzVector /*<RzAnalysisVarStoragePiece *>*/ *composite;
 	};
 } RzAnalysisVarStorage;
 
@@ -692,6 +702,8 @@ static inline void rz_analysis_var_storage_init_stack(RzAnalysisVarStorage *stor
 	stor->stack_off = stack_off;
 }
 
+RZ_API void rz_analysis_var_storage_init_composite(RzAnalysisVarStorage *sto);
+
 /**
  * \brief Kind of a variable
  */
@@ -700,6 +712,16 @@ typedef enum rz_analysis_var_kind_t {
 	RZ_ANALYSIS_VAR_KIND_FORMAL_PARAMETER, ///< Variable is function formal parameter
 	RZ_ANALYSIS_VAR_KIND_VARIABLE, ///< Variable is local variable
 } RzAnalysisVarKind;
+
+typedef struct dwarf_variable_t {
+	ut64 offset; ///< DIE offset of the variable
+	RzBinDwarfLocation *location; ///< location description
+	char *name; ///< name of the variable
+	char *link_name; ///< link name of the variable
+	const char *prefer_name; ///< prefer name of the variable, reference to name or link_name depends on language
+	RzType *type; ///< type of the variable
+	RzAnalysisVarKind kind; ///< kind of the variable
+} RzAnalysisDwarfVariable;
 
 /**
  * A local variable or parameter as part of a function
@@ -722,7 +744,7 @@ typedef struct rz_analysis_var_t {
 			RZ_ANALYSIS_VAR_ORIGIN_NONE = 0, ///< Variable was created from rizin
 			RZ_ANALYSIS_VAR_ORIGIN_DWARF, ///< Variable was created from DWARF information
 		} kind; ///< Kind of origin
-		RzBinDwarfLocation *DWARF_location; ///< Location description from DWARF
+		RzAnalysisDwarfVariable *DW; ///< Location description from DWARF
 	} origin; ///< Origin of the variable, i.e. DWARF, PDB, OMF
 } RzAnalysisVar;
 /**
@@ -736,16 +758,6 @@ typedef struct rz_analysis_var_global_t {
 	RzVector /*<RzTypeConstraint>*/ constraints;
 	RZ_BORROW RzAnalysis *analysis; ///< analysis pertaining to this global variable
 } RzAnalysisVarGlobal;
-
-typedef struct dwarf_variable_t {
-	ut64 offset; ///< DIE offset of the variable
-	RzBinDwarfLocation *location; ///< location description
-	char *name; ///< name of the variable
-	char *link_name; ///< link name of the variable
-	const char *prefer_name; ///< prefer name of the variable, reference to name or link_name depends on language
-	RzType *type; ///< type of the variable
-	RzAnalysisVarKind kind; ///< kind of the variable
-} RzAnalysisDwarfVariable;
 
 typedef struct dwarf_function_t {
 	ut64 offset; ///< DIE offset
@@ -1746,7 +1758,6 @@ RZ_API bool rz_analysis_var_storage_type_from_string(
 RZ_API void rz_analysis_var_storage_dump(
 	RZ_NONNULL RZ_BORROW RzAnalysis *a,
 	RZ_NONNULL RZ_BORROW RZ_OUT RzStrBuf *sb,
-	RZ_NONNULL RZ_BORROW const RzAnalysisVar *var,
 	RZ_NONNULL RZ_BORROW const RzAnalysisVarStorage *storage);
 RZ_API void rz_analysis_var_storage_dump_pj(
 	RZ_NONNULL RZ_BORROW RZ_OUT PJ *pj,
@@ -1754,8 +1765,11 @@ RZ_API void rz_analysis_var_storage_dump_pj(
 	RZ_NONNULL RZ_BORROW const RzAnalysisVarStorage *storage);
 RZ_API RZ_OWN char *rz_analysis_var_storage_to_string(
 	RZ_NONNULL RZ_BORROW RzAnalysis *a,
-	RZ_NONNULL RZ_BORROW const RzAnalysisVar *var,
 	RZ_NONNULL RZ_BORROW const RzAnalysisVarStorage *storage);
+
+RZ_API void rz_analysis_var_storage_piece_fini(RzAnalysisVarStoragePiece *p);
+RZ_API void rz_analysis_var_storage_fini(RzAnalysisVarStorage *sto);
+RZ_API void rz_analysis_var_storage_free(RzAnalysisVarStorage *sto);
 
 // Get the variable that var is written to at one of its accesses
 // Useful for cases where a register-based argument is written away into a stack variable,
@@ -1763,10 +1777,16 @@ RZ_API RZ_OWN char *rz_analysis_var_storage_to_string(
 RZ_API RzAnalysisVar *rz_analysis_var_get_dst_var(RzAnalysisVar *var);
 
 typedef struct rz_analysis_fcn_vars_cache {
-	RzList /*<RzAnalysisVar *>*/ *regvars;
-	RzList /*<RzAnalysisVar *>*/ *stackvars;
+	RzList /*<RzAnalysisVar *>*/ *sorted_vars;
+	RzList /*<RzAnalysisVar *>*/ *arg_vars;
 } RzAnalysisFcnVarsCache;
-RZ_API void rz_analysis_fcn_vars_cache_init(RzAnalysis *analysis, RzAnalysisFcnVarsCache *cache, RzAnalysisFunction *fcn);
+RZ_API void rz_analysis_fcn_vars_cache_init(
+	RZ_NONNULL RZ_BORROW RzAnalysis *analysis,
+	RZ_NONNULL RZ_BORROW RZ_OUT RzAnalysisFcnVarsCache *cache,
+	RZ_NONNULL RZ_BORROW RzAnalysisFunction *fcn);
+RZ_API RZ_OWN RzAnalysisFcnVarsCache *rz_analysis_fcn_vars_cache_from_fcn(
+	RZ_NONNULL RZ_BORROW RzAnalysis *analysis,
+	RZ_NONNULL RZ_BORROW RzAnalysisFunction *fcn);
 RZ_API void rz_analysis_fcn_vars_cache_fini(RzAnalysisFcnVarsCache *cache);
 
 RZ_API char *rz_analysis_fcn_format_sig(RZ_NONNULL RzAnalysis *analysis, RZ_NONNULL RzAnalysisFunction *fcn, RZ_NULLABLE char *fcn_name,

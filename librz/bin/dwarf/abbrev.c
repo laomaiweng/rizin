@@ -181,7 +181,9 @@ err:
  * \param name DW_AT name
  * \return RzBinDwarfAttrDef object or NULL if not found
  */
-RZ_API RZ_BORROW RzBinDwarfAttrDef *rz_bin_dwarf_abbrev_attr_by_name(RZ_BORROW RZ_NONNULL const RzBinDwarfAbbrevDecl *abbrev, enum DW_AT name) {
+RZ_API RZ_BORROW RzBinDwarfAttrDef *rz_bin_dwarf_abbrev_attr_by_name(
+	RZ_BORROW RZ_NONNULL const RzBinDwarfAbbrevDecl *abbrev,
+	DW_AT name) {
 	rz_return_val_if_fail(abbrev, NULL);
 	RzBinDwarfAttrDef *attr = NULL;
 	rz_vector_foreach(&abbrev->defs, attr) {

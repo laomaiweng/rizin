@@ -4235,9 +4235,8 @@ RZ_API const char *rz_str_indent(int indent) {
 		"\t\t\t\t\t\t\t\t",
 		"\t\t\t\t\t\t\t\t\t",
 	};
-	if (indent <= 0) {
+	if (indent < 0 || indent >= RZ_ARRAY_SIZE(indent_tbl)) {
 		return "";
 	}
-	indent = RZ_MIN(indent, RZ_ARRAY_SIZE(indent_tbl));
 	return indent_tbl[indent];
 }

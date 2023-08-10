@@ -580,15 +580,15 @@ static const char *dwarf_op[] = {
 		return NULL; \
 	}
 
-DW_ENUM_TO_STRING_IMPL(unit_type, enum DW_UT, dwarf_unit_types);
-DW_ENUM_TO_STRING_IMPL(lang_for_demangle, enum DW_LANG, dwarf_langs_for_demangle);
-DW_ENUM_TO_STRING_IMPL(children, enum DW_CHILDREN, dwarf_children);
-DW_ENUM_TO_STRING_IMPL(lns, enum DW_LNS, dwarf_lns);
-DW_ENUM_TO_STRING_IMPL(lne, enum DW_LNE, dwarf_lne);
-DW_ENUM_TO_STRING_IMPL(lnct, enum DW_LNCT, dwarf_lnct);
-DW_ENUM_TO_STRING_IMPL(op, enum DW_OP, dwarf_op);
+DW_ENUM_TO_STRING_IMPL(unit_type, DW_UT, dwarf_unit_types);
+DW_ENUM_TO_STRING_IMPL(lang_for_demangle, DW_LANG, dwarf_langs_for_demangle);
+DW_ENUM_TO_STRING_IMPL(children, DW_CHILDREN, dwarf_children);
+DW_ENUM_TO_STRING_IMPL(lns, DW_LNS, dwarf_lns);
+DW_ENUM_TO_STRING_IMPL(lne, DW_LNE, dwarf_lne);
+DW_ENUM_TO_STRING_IMPL(lnct, DW_LNCT, dwarf_lnct);
+DW_ENUM_TO_STRING_IMPL(op, DW_OP, dwarf_op);
 
-RZ_API const char *rz_bin_dwarf_tag(enum DW_TAG tag) {
+RZ_API const char *rz_bin_dwarf_tag(DW_TAG tag) {
 	DW_ENUM_TO_STRING(dwarf_tag_name_encodings, tag);
 	switch (tag) {
 		DW_(DW_TAG_MIPS_loop);
@@ -638,7 +638,7 @@ RZ_API const char *rz_bin_dwarf_tag(enum DW_TAG tag) {
 	};
 }
 
-RZ_API const char *rz_bin_dwarf_attr(enum DW_AT attr_code) {
+RZ_API const char *rz_bin_dwarf_attr(DW_AT attr_code) {
 	DW_ENUM_TO_STRING(dwarf_attr_encodings, attr_code);
 	// the below codes are much sparser, so putting them in an array would require a lot of
 	// unused memory
@@ -789,7 +789,7 @@ RZ_API const char *rz_bin_dwarf_attr(enum DW_AT attr_code) {
 	}
 }
 
-RZ_API const char *rz_bin_dwarf_form(enum DW_FORM form_code) {
+RZ_API const char *rz_bin_dwarf_form(DW_FORM form_code) {
 	DW_ENUM_TO_STRING(dwarf_attr_form_encodings, form_code);
 	switch (form_code) {
 		DW_(DW_FORM_GNU_addr_index);
@@ -800,7 +800,7 @@ RZ_API const char *rz_bin_dwarf_form(enum DW_FORM form_code) {
 	}
 }
 
-RZ_API const char *rz_bin_dwarf_lang(enum DW_LANG lang) {
+RZ_API const char *rz_bin_dwarf_lang(DW_LANG lang) {
 	DW_ENUM_TO_STRING(dwarf_langs, lang);
 	switch (lang) {
 		DW_(DW_LANG_Mips_Assembler);

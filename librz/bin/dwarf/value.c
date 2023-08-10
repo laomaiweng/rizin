@@ -37,7 +37,7 @@ static uint32_t bit_size(RzBinDwarfValueType type, ut64 addr_mask) {
 	}
 }
 
-RZ_IPI bool ValueType_from_encoding(enum DW_ATE encoding, ut64 byte_size, RzBinDwarfValueType *out_type) {
+RZ_IPI bool ValueType_from_encoding(DW_ATE encoding, ut64 byte_size, RzBinDwarfValueType *out_type) {
 	RzBinDwarfValueType value_type = -1;
 	switch (encoding) {
 	case DW_ATE_signed:
@@ -96,7 +96,7 @@ RZ_IPI bool ValueType_from_entry(RzBinDwarfDie *entry, RzBinDwarfValueType *out)
 		return false; // Represents Option::None in Rust
 	}
 
-	enum DW_ATE encoding = -1;
+	DW_ATE encoding = -1;
 	ut64 byte_size = 0;
 	int endianity = DW_END_default;
 

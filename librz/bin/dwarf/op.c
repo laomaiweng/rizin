@@ -614,7 +614,7 @@ static RzBinDwarfValueType ValueType_from_die(RzBinDwarfEvaluation *eval, const 
 	RzBinDwarfValueType value_type = RzBinDwarfValueType_GENERIC;
 	ut8 byte_size = 0;
 	const char *name = NULL;
-	enum DW_ATE ate = 0;
+	DW_ATE ate = 0;
 	rz_vector_foreach(&die->attrs, attr) {
 		switch (attr->name) {
 		case DW_AT_name:
@@ -1312,7 +1312,7 @@ static RzBinDwarfLocation *RzBinDwarfEvaluationResult_to_loc(RzBinDwarfEvaluatio
 	if (eval->state.kind == EVALUATION_STATE_COMPLETE && result->kind == EvaluationResult_COMPLETE) {
 		RzVector *pieces = rz_bin_dwarf_evaluation_result(eval);
 		if (!pieces || rz_vector_empty(pieces)) {
-			return NULL; // TODO: or empty location?
+			return NULL;
 		}
 		if (rz_vector_len(pieces) == 1) {
 			RzBinDwarfPiece *piece = rz_vector_index_ptr(pieces, 0);

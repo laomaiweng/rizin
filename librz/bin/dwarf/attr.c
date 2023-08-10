@@ -4,6 +4,17 @@
 #include <rz_bin_dwarf.h>
 #include "dwarf_private.h"
 
+#define CHECK_STRING \
+	if (!value->string.content) { \
+		const char *tag_str = in->type == DW_ATTR_TYPE_DEF \
+			? rz_bin_dwarf_attr(value->name) \
+			: (in->type == DW_ATTR_TYPE_FILE_ENTRY_FORMAT \
+					  ? rz_bin_dwarf_lnct(in->format->content_type) \
+					  : "unknown"); \
+		RZ_LOG_ERROR("Failed to read string %s [%s]\n", tag_str, rz_bin_dwarf_form(value->form)); \
+		return false; \
+	}
+
 /**
  * This function is quite incomplete and requires lot of work
  * With parsing various new FORM values
@@ -77,16 +88,6 @@ RZ_IPI bool RzBinDwarfAttr_parse(RzBuffer *buffer, RzBinDwarfAttr *value, DwAttr
 	case DW_FORM_string:
 		value->kind = DW_AT_KIND_STRING;
 		value->string.content = buf_get_string(buffer);
-#define CHECK_STRING \
-	if (!value->string.content) { \
-		const char *tag_str = in->type == DW_ATTR_TYPE_DEF \
-			? rz_bin_dwarf_attr(value->name) \
-			: (in->type == DW_ATTR_TYPE_FILE_ENTRY_FORMAT \
-					  ? rz_bin_dwarf_lnct(in->format->content_type) \
-					  : "unknown"); \
-		RZ_LOG_ERROR("Failed to read string %s [%s]\n", tag_str, rz_bin_dwarf_form(value->form)); \
-		return false; \
-	}
 		CHECK_STRING;
 		break;
 	case DW_FORM_block1:

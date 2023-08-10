@@ -65,6 +65,15 @@ static bool RzBinDwarfDie_attrs_parse(RzBuffer *buffer, RzBinDwarfDie *die, RzBi
 				line_info_offset = attr.reference;
 			}
 			break;
+		case DW_AT_sibling:
+			if (attr.kind == DW_AT_KIND_UCONSTANT) {
+				die->sibling = attr.uconstant;
+			} else if (attr.kind == DW_AT_KIND_REFERENCE) {
+				die->sibling = attr.reference;
+			} else {
+				rz_warn_if_reached();
+			}
+			break;
 		default:
 			break;
 		}
@@ -290,17 +299,18 @@ static bool RzBinDwarfCompUnit_parse(
 			if (die->tag == DW_TAG_compile_unit) {
 				RzBinDwarfCompUnit_apply(&unit, die);
 			}
+			rz_vector_shrink(&unit.dies);
 		}
 
 		rz_vector_push(&info->units, &unit);
 	}
-
+	rz_vector_shrink(&info->units);
 	return true;
 cleanup:
 	return false;
 }
 
-RZ_API RZ_BORROW RzBinDwarfAttr *rz_bin_dwarf_die_get_attr(RZ_BORROW RZ_NONNULL const RzBinDwarfDie *die, enum DW_AT name) {
+RZ_API RZ_BORROW RzBinDwarfAttr *rz_bin_dwarf_die_get_attr(RZ_BORROW RZ_NONNULL const RzBinDwarfDie *die, DW_AT name) {
 	rz_return_val_if_fail(die, NULL);
 	RzBinDwarfAttr *attr = NULL;
 	rz_vector_foreach(&die->attrs, attr) {

@@ -8,9 +8,7 @@
 extern "C" {
 #endif
 
-struct rz_bin_source_line_info_builder_t;
-
-enum DW_LNS {
+typedef enum {
 	DW_LNS_copy = 0x01,
 	DW_LNS_advance_pc = 0x02,
 	DW_LNS_advance_line = 0x03,
@@ -23,10 +21,10 @@ enum DW_LNS {
 	DW_LNS_set_prologue_end = 0x0a, /* DWARF3 */
 	DW_LNS_set_epilogue_begin = 0x0b, /* DWARF3 */
 	DW_LNS_set_isa = 0x0c, /* DWARF3 */
-};
+} DW_LNS;
 
 /* Line number extended opcode name. */
-enum DW_LNE {
+typedef enum {
 	DW_LNE_end_sequence = 0x01,
 	DW_LNE_set_address = 0x02,
 	DW_LNE_define_file = 0x03,
@@ -44,12 +42,12 @@ enum DW_LNE {
 	DW_LNE_HP_negate_function_exit = 0x18, /* 24 HP */
 	DW_LNE_HP_negate_front_end_logical = 0x19, /* 25 HP */
 	DW_LNE_HP_define_proc = 0x20, /* 32 HP */
-};
+} DW_LNE;
 
 /* debug_info tags */
 // this is not a real dwarf named entry, but I wanted to give it
 // a name so it's more obvious and readable that it's just a type of entry
-enum DW_TAG {
+typedef enum {
 	DW_TAG_null_entry = 0x00,
 	DW_TAG_array_type = 0x01,
 	DW_TAG_class_type = 0x02,
@@ -192,14 +190,14 @@ enum DW_TAG {
 	DW_TAG_BORLAND_Delphi_dynamic_array = 0xb002,
 	DW_TAG_BORLAND_Delphi_set = 0xb003,
 	DW_TAG_BORLAND_Delphi_variant = 0xb004,
-};
+} DW_TAG;
 
-enum DW_CHILDREN {
+typedef enum {
 	DW_CHILDREN_no = 0x00,
 	DW_CHILDREN_yes = 0x01,
-};
+} DW_CHILDREN;
 
-enum DW_AT {
+typedef enum {
 	DW_AT_sibling = 0x01,
 	DW_AT_location = 0x02,
 	DW_AT_name = 0x03,
@@ -489,9 +487,9 @@ enum DW_AT {
 	DW_AT_APPLE_objc_complete_type = 0x3fec,
 	DW_AT_APPLE_property = 0x3fed,
 	DW_AT_hi_user = 0x3fff,
-};
+} DW_AT;
 
-enum DW_FORM {
+typedef enum {
 	DW_FORM_addr = 0x01,
 	DW_FORM_block2 = 0x03,
 	DW_FORM_block4 = 0x04,
@@ -542,9 +540,9 @@ enum DW_FORM {
 	// Alternate debug sections proposal (output of "dwz" tool).
 	DW_FORM_GNU_ref_alt = 0x1f20,
 	DW_FORM_GNU_strp_alt = 0x1f21
-};
+} DW_FORM;
 
-enum DW_OP {
+typedef enum {
 	DW_OP_addr = 0x03,
 	DW_OP_deref = 0x06,
 	DW_OP_const1u = 0x08,
@@ -728,9 +726,9 @@ enum DW_OP {
 	/* <_lo_user ; _hi_user> Interval is reserved for vendor extensions */
 	DW_OP_lo_user = 0xe0,
 	DW_OP_hi_user = 0xff,
-};
+} DW_OP;
 
-enum DW_ATE {
+typedef enum {
 	DW_ATE_address = 0x01,
 	DW_ATE_boolean = 0x02,
 	DW_ATE_complex_float = 0x03,
@@ -750,12 +748,12 @@ enum DW_ATE {
 	/* <_lo_user ; _hi_user> Interval is reserved for vendor extensions */
 	DW_ATE_lo_user = 0x80,
 	DW_ATE_hi_user = 0xff,
-};
+} DW_ATE;
 
 /// Range list entry encoding values.
 ///
 /// See Section 7.25, Table 7.30.
-enum DW_RLE {
+typedef enum {
 	DW_RLE_end_of_list = 0x00,
 	DW_RLE_base_addressx = 0x01,
 	DW_RLE_startx_endx = 0x02,
@@ -764,7 +762,7 @@ enum DW_RLE {
 	DW_RLE_base_address = 0x05,
 	DW_RLE_start_end = 0x06,
 	DW_RLE_start_length = 0x07,
-};
+} DW_RLE;
 
 /// The encodings of the constants used in location list entries.
 ///
@@ -782,42 +780,42 @@ enum DW_LLE {
 	DW_LLE_GNU_view_pair = 0x09,
 };
 
-enum DW_DS {
+typedef enum {
 	DW_DS_unsigned = 0x01,
 	DW_DS_leading_overpunch = 0x02,
 	DW_DS_trailing_overpunch = 0x03,
 	DW_DS_leading_separate = 0x04,
 	DW_DS_trailing_separate = 0x05,
-};
+} DW_DS;
 
-enum DW_END {
+typedef enum {
 	DW_END_default = 0x00,
 	DW_END_big = 0x01,
 	DW_END_little = 0x02,
 	/* <_lo_user ; _hi_user> Interval is reserved for vendor extensions */
 	DW_END_lo_user = 0x40,
 	DW_END_hi_user = 0xff,
-};
+} DW_END;
 
-enum DW_ACCESS {
+typedef enum {
 	DW_ACCESS_public = 0x01,
 	DW_ACCESS_protected = 0x02,
 	DW_ACCESS_private = 0x03,
-};
+} DW_ACCESS;
 
-enum DW_VIS {
+typedef enum {
 	DW_VIS_local = 0x01,
 	DW_VIS_exported = 0x02,
 	DW_VIS_qualified = 0x03,
-};
+} DW_VIS;
 
-enum DW_VIRTUALITY {
+typedef enum {
 	DW_VIRTUALITY_none = 0x00,
 	DW_VIRTUALITY_virtual = 0x01,
 	DW_VIRTUALITY_pure_virtual = 0x02,
-};
+} DW_VIRTUALITY;
 
-enum DW_LANG {
+typedef enum {
 	DW_LANG_C89 = 0x0001,
 	DW_LANG_C = 0x0002,
 	DW_LANG_Ada83 = 0x0003,
@@ -872,49 +870,49 @@ enum DW_LANG {
 	DW_LANG_SUN_Assembler = 0x9001,
 	DW_LANG_ALTIUM_Assembler = 0x9101,
 	DW_LANG_BORLAND_Delphi = 0xb000,
-};
+} DW_LANG;
 
-enum DW_ID {
+typedef enum {
 	DW_ID_case_sensitive = 0x00,
 	DW_ID_up_case = 0x01,
 	DW_ID_down_case = 0x02,
 	DW_ID_case_insensitive = 0x03,
-};
+} DW_ID;
 
-enum DW_CC {
+typedef enum {
 	DW_CC_normal = 0x01,
 	DW_CC_program = 0x02,
 	DW_CC_nocall = 0x03,
 	DW_CC_lo_user = 0x40,
 	DW_CC_hi_user = 0xff,
-};
+} DW_CC;
 
-enum DW_INL {
+typedef enum {
 	DW_INL_not_inlined = 0x00,
 	DW_INL_inlined = 0x01,
 	DW_INL_declared_not_inlined = 0x02,
 	DW_INL_declared_inlined = 0x03,
-};
+} DW_INL;
 
-enum DW_ORD {
+typedef enum {
 	DW_ORD_row_major = 0x00,
 	DW_ORD_col_major = 0x01,
-};
+} DW_ORD;
 
-enum DW_DSC {
+typedef enum {
 	DW_DSC_label = 0x00,
 	DW_DSC_range = 0x01,
-};
+} DW_DSC;
 
-enum DW_MACINFO {
+typedef enum {
 	DW_MACINFO_define = 0x01,
 	DW_MACINFO_undef = 0x02,
 	DW_MACINFO_start_file = 0x03,
 	DW_MACINFO_end_file = 0x04,
 	DW_MACINFO_vendor_ext = 0xff,
-};
+} DW_MACINFO;
 
-enum DW_CFA {
+typedef enum {
 	DW_CFA_advance_loc = 0x40,
 	DW_CFA_offset = 0x80,
 	DW_CFA_restore = 0xc0,
@@ -943,9 +941,9 @@ enum DW_CFA {
 	DW_CFA_val_expression = 0x16,
 	DW_CFA_lo_user = 0x1c,
 	DW_CFA_hi_user = 0x3f,
-};
+} DW_CFA;
 
-enum DW_UT {
+typedef enum {
 	DW_UT_compile = 0x01,
 	DW_UT_type = 0x02,
 	DW_UT_partial = 0x03,
@@ -954,12 +952,12 @@ enum DW_UT {
 	DW_UT_split_type = 0x06,
 	DW_UT_lo_user = 0x80,
 	DW_UT_hi_user = 0xff,
-};
+} DW_UT;
 
 /// The encodings for the line number header entry formats.
 ///
 /// See Section 7.22, Table 7.27.
-enum DW_LNCT {
+typedef enum {
 	DW_LNCT_path = 0x1,
 	DW_LNCT_directory_index = 0x2,
 	DW_LNCT_timestamp = 0x3,
@@ -967,7 +965,7 @@ enum DW_LNCT {
 	DW_LNCT_MD5 = 0x5,
 	DW_LNCT_lo_user = 0x2000,
 	DW_LNCT_hi_user = 0x3fff,
-};
+} DW_LNCT;
 
 typedef struct {
 	ut32 total_length;
@@ -1017,8 +1015,8 @@ typedef struct {
 } RzBinDwarfAddressRangeTable;
 
 typedef struct {
-	enum DW_AT name;
-	enum DW_FORM form;
+	DW_AT name;
+	DW_FORM form;
 	st64 special; // Used for values coded directly into abbrev
 } RzBinDwarfAttrDef;
 
@@ -1047,8 +1045,8 @@ typedef enum DW_AT_KIND {
 } RzBinDwarfAttrKind;
 
 typedef struct dwarf_attr_t {
-	enum DW_AT name;
-	enum DW_FORM form;
+	DW_AT name;
+	DW_FORM form;
 	RzBinDwarfAttrKind kind;
 	/* This is subideal, as dw_form_data can be anything
 	   we could lose information example: encoding signed
@@ -1089,7 +1087,7 @@ typedef struct {
 	ut64 length;
 	// A 4-byte unsigned offset into the .debug_abbrev section.
 	ut64 abbrev_offset;
-	enum DW_UT unit_type; // DWARF 5 addition
+	DW_UT unit_type; // DWARF 5 addition
 	ut8 dwo_id; // DWARF 5 addition
 	ut64 type_sig; // DWARF 5 addition
 	ut64 type_offset; // DWARF 5 addition
@@ -1100,13 +1098,14 @@ typedef struct {
 
 typedef struct {
 	ut64 offset; // important for parsing types
-	enum DW_TAG tag;
+	DW_TAG tag;
 	ut64 abbrev_code;
-	enum DW_CHILDREN has_children; // important for parsing types
+	DW_CHILDREN has_children; // important for parsing types
 	RzVector /*<RzBinDwarfAttrValue>*/ attrs;
 	size_t unit_offset;
 	size_t index;
 	size_t depth;
+	ut64 sibling;
 } RzBinDwarfDie;
 
 typedef struct rz_bin_dwarf_comp_unit_t {
@@ -1116,7 +1115,7 @@ typedef struct rz_bin_dwarf_comp_unit_t {
 	char *name;
 	char *comp_dir;
 	char *producer;
-	enum DW_LANG language;
+	DW_LANG language;
 	ut64 low_pc;
 	ut64 high_pc;
 	ut64 stmt_list;
@@ -1141,9 +1140,9 @@ typedef struct {
 
 typedef struct {
 	ut64 code;
-	enum DW_TAG tag;
+	DW_TAG tag;
 	ut64 offset;
-	enum DW_CHILDREN has_children;
+	DW_CHILDREN has_children;
 	RzVector /*<RzBinDwarfAttrDef>*/ defs;
 } RzBinDwarfAbbrevDecl;
 
@@ -1176,8 +1175,8 @@ typedef struct {
 } RzBinDwarfSMRegisters;
 
 typedef struct rz_bin_dwarf_line_file_entry_format_t {
-	enum DW_LNCT content_type;
-	enum DW_FORM form;
+	DW_LNCT content_type;
+	DW_FORM form;
 } RzBinDwarfFileEntryFormat;
 
 typedef struct {
@@ -1229,8 +1228,8 @@ typedef struct {
 	ut64 offset;
 	RzBinDwarfLineOpType type;
 	union {
-		enum DW_LNS opcode;
-		enum DW_LNE ext_opcode;
+		DW_LNS opcode;
+		DW_LNE ext_opcode;
 	};
 	struct {
 		union {
@@ -1319,7 +1318,7 @@ typedef enum {
 
 /// A raw entry in .debug_rnglists
 typedef struct {
-	enum DW_RLE encoding;
+	DW_RLE encoding;
 	bool is_address_or_offset_pair;
 	union {
 		/// A range from DWARF version <= 4.
@@ -1469,17 +1468,17 @@ typedef struct {
 
 typedef RzList /*<RzBinDwarfARangeSet *>*/ RzBinDwarfARangeSets;
 
-RZ_API const char *rz_bin_dwarf_tag(enum DW_TAG tag);
-RZ_API const char *rz_bin_dwarf_attr(enum DW_AT attr_code);
-RZ_API const char *rz_bin_dwarf_form(enum DW_FORM form_code);
-RZ_API const char *rz_bin_dwarf_unit_type(enum DW_UT unit_type);
-RZ_API const char *rz_bin_dwarf_lang(enum DW_LANG lang);
-RZ_API const char *rz_bin_dwarf_lang_for_demangle(enum DW_LANG lang);
-RZ_API const char *rz_bin_dwarf_children(enum DW_CHILDREN children);
-RZ_API const char *rz_bin_dwarf_lns(enum DW_LNS lns);
-RZ_API const char *rz_bin_dwarf_lne(enum DW_LNE lne);
-RZ_API const char *rz_bin_dwarf_lnct(enum DW_LNCT lnct);
-RZ_API const char *rz_bin_dwarf_op(enum DW_OP op);
+RZ_API const char *rz_bin_dwarf_tag(DW_TAG tag);
+RZ_API const char *rz_bin_dwarf_attr(DW_AT attr_code);
+RZ_API const char *rz_bin_dwarf_form(DW_FORM form_code);
+RZ_API const char *rz_bin_dwarf_unit_type(DW_UT unit_type);
+RZ_API const char *rz_bin_dwarf_lang(DW_LANG lang);
+RZ_API const char *rz_bin_dwarf_lang_for_demangle(DW_LANG lang);
+RZ_API const char *rz_bin_dwarf_children(DW_CHILDREN children);
+RZ_API const char *rz_bin_dwarf_lns(DW_LNS lns);
+RZ_API const char *rz_bin_dwarf_lne(DW_LNE lne);
+RZ_API const char *rz_bin_dwarf_lnct(DW_LNCT lnct);
+RZ_API const char *rz_bin_dwarf_op(DW_OP op);
 
 RZ_API RZ_OWN RzList /*<RzBinDwarfARangeSet *>*/ *rz_bin_dwarf_aranges_parse(RZ_BORROW RZ_NONNULL RzBinFile *binfile);
 RZ_API RZ_OWN RzBinDwarfDebugAbbrevs *rz_bin_dwarf_abbrev_parse(RZ_BORROW RZ_NONNULL RzBinFile *binfile);
@@ -1493,8 +1492,8 @@ RZ_API size_t rz_bin_dwarf_abbrev_count(RZ_BORROW RZ_NONNULL const RzBinDwarfDeb
 RZ_API RZ_BORROW RzBinDwarfAbbrevDecl *rz_bin_dwarf_abbrev_get(RZ_BORROW RZ_NONNULL const RzBinDwarfAbbrevTable *tbl, size_t idx);
 RZ_API size_t rz_bin_dwarf_abbrev_decl_count(RZ_BORROW RZ_NONNULL const RzBinDwarfAbbrevDecl *decl);
 
-RZ_API RZ_BORROW RzBinDwarfAttr *rz_bin_dwarf_die_get_attr(RZ_BORROW RZ_NONNULL const RzBinDwarfDie *die, enum DW_AT name);
-RZ_API RZ_BORROW RzBinDwarfAttrDef *rz_bin_dwarf_abbrev_attr_by_name(RZ_BORROW RZ_NONNULL const RzBinDwarfAbbrevDecl *abbrev, enum DW_AT name);
+RZ_API RZ_BORROW RzBinDwarfAttr *rz_bin_dwarf_die_get_attr(RZ_BORROW RZ_NONNULL const RzBinDwarfDie *die, DW_AT name);
+RZ_API RZ_BORROW RzBinDwarfAttrDef *rz_bin_dwarf_abbrev_attr_by_name(RZ_BORROW RZ_NONNULL const RzBinDwarfAbbrevDecl *abbrev, DW_AT name);
 
 RZ_API RzBinDwarfLineInfo *rz_bin_dwarf_parse_line(RZ_BORROW RZ_NONNULL RzBinFile *binfile, RZ_BORROW RZ_NONNULL RzBinDwarfDebugInfo *info, RzBinDwarfLineInfoMask mask);
 RZ_API void rz_bin_dwarf_line_op_fini(RZ_OWN RZ_NULLABLE RzBinDwarfLineOp *op);

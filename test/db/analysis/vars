@@ -905,6 +905,7 @@ int printf(const char *fmt, ...);
 ---------
 var void *str @ a0
 arg void *str @ a4
+arg const char *buf @ a4
 var int32_t arg6 @ a5
 arg size_t n @ d5
 void * prout(void *str, const char *buf, size_t n);
@@ -913,6 +914,7 @@ void * prout(void *str, const char *buf, size_t n);
 |           ; var int32_t arg6 @ a5
 |           ; var void *str @ a0
 |           ; arg void *str @ a4
+|           ; arg const char *buf @ a4
 |           ; arg size_t n @ d5
 |           0x80000c04      mov.aa a15, a4                             ; printf.c:5 ; arg5 ; void * prout(void *str, const char *buf, size_t n)
 ---------
@@ -946,6 +948,7 @@ fp_number_type * _fpadd_parts(fp_number_type *a, fp_number_type *b, fp_number_ty
 |           0x80003c60      ld.bu d15, [a4]#0                          ; fp-bit.c:604 ; arg5 ; fp_number_type * _fpadd_parts(fp_number_type *a, fp_number_type *b, fp_number_type *tmp)
 ---------
 arg const char *s @ a2
+var const char *sc @ a2
 var int32_t arg5 @ a4
 arg size_t maxsize @ d4
 size_t strnlen_s(const char *s, size_t maxsize);
@@ -955,6 +958,7 @@ size_t strnlen_s(const char *s, size_t maxsize);
 |           ; var int32_t arg5 @ a4
 |           ; arg const char *s @ a2
 |           ; arg size_t maxsize @ d4
+|           ; var const char *sc @ a2
 |           0x800030ca      mov   d2, #0                               ; strnlen_s.c:6 ; size_t strnlen_s(const char *s, size_t maxsize)
 ---------
 var _Statab *pwcstate @ a13
@@ -1142,6 +1146,7 @@ int printf(const char *fmt, ...);
 
 var void *str @ a0
 arg void *str @ a4
+arg const char *buf @ a4
 var int32_t arg6 @ a5
 arg size_t n @ d5
 void * prout(void *str, const char *buf, size_t n);
@@ -1150,6 +1155,7 @@ void * prout(void *str, const char *buf, size_t n);
 |           ; var int32_t arg6 @ a5
 |           ; var void *str @ a0
 |           ; arg void *str @ a4
+|           ; arg const char *buf @ a4
 |           ; arg size_t n @ d5
 |           0x80000c04      mov.aa a15, a4                             ; printf.c:5 ; arg5 ; void * prout(void *str, const char *buf, size_t n)
 
@@ -1183,6 +1189,7 @@ fp_number_type * _fpadd_parts(fp_number_type *a, fp_number_type *b, fp_number_ty
 |           0x80003c60      ld.bu d15, [a4]#0                          ; fp-bit.c:604 ; arg5 ; fp_number_type * _fpadd_parts(fp_number_type *a, fp_number_type *b, fp_number_type *tmp)
 
 arg const char *s @ a2
+var const char *sc @ a2
 var int32_t arg5 @ a4
 arg size_t maxsize @ d4
 size_t strnlen_s(const char *s, size_t maxsize);
@@ -1192,6 +1199,7 @@ size_t strnlen_s(const char *s, size_t maxsize);
 |           ; var int32_t arg5 @ a4
 |           ; arg const char *s @ a2
 |           ; arg size_t maxsize @ d4
+|           ; var const char *sc @ a2
 |           0x800030ca      mov   d2, #0                               ; strnlen_s.c:6 ; size_t strnlen_s(const char *s, size_t maxsize)
 
 var _Statab *pwcstate @ a13

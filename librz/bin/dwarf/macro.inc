@@ -31,7 +31,7 @@
 	do { \
 		X temp = { 0 }; \
 		wrap(F); \
-		out = temp; \
+		(out) = temp; \
 	} while (0)
 
 #define WRAP_VA_F(X, F, out, wrap, ...) \

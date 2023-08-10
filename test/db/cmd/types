@@ -376,17 +376,20 @@ EOF
 RUN
 
 NAME=typedef self-reference
-BROKEN=1
 FILE=bins/elf/analysis/self-ref-typedef
 CMDS=<<EOF
 tt const_reference
 ttc const_reference
 t const_reference
 tc const_reference
+tc const_reference_0
 EOF
 EXPECT=<<EOF
+const_reference = struct const_reference_0
+typedef struct const_reference_0 const_reference;
 pf d a
-struct const_reference {
+const_reference;
+struct const_reference_0 {
 	int a;
 };
 EOF

@@ -22,7 +22,7 @@ RZ_API int rz_analysis_var_storage_cmp(
 	RZ_NONNULL const RzAnalysisVarStorage *b) {
 	rz_return_val_if_fail(a && b, 0);
 	if (a->type != b->type) {
-		return (int)a->type - (int)b->type;
+		return -(int)a->type + (int)b->type;
 	}
 	switch (a->type) {
 	case RZ_ANALYSIS_VAR_STORAGE_REG:
@@ -86,12 +86,29 @@ static void strbuf_append_sign_hex(RzStrBuf *sb, st64 x) {
 	rz_strbuf_appendf(sb, " %c 0x%" PFMT64x, sign, RZ_ABS(x));
 }
 
+static void composite_dump(RZ_NONNULL RZ_BORROW RzAnalysis *a,
+	RZ_NONNULL RZ_BORROW RZ_OUT RzStrBuf *sb,
+	RZ_NONNULL RZ_BORROW const RzVector *composite) {
+	rz_strbuf_append(sb, "composite: [");
+	ut32 i;
+	ut32 end = rz_vector_len(composite) - 1;
+	RzAnalysisVarStoragePiece *piece = NULL;
+	rz_vector_enumerate(composite, piece, i) {
+		rz_strbuf_appendf(sb, "(.%" PFMT32u ", %" PFMT32u "): ",
+			piece->offset_in_bits, piece->size_in_bits);
+		rz_analysis_var_storage_dump(a, sb, piece->storage);
+		if (i < end) {
+			rz_strbuf_append(sb, ", ");
+		}
+	}
+	rz_strbuf_append(sb, "]");
+}
+
 RZ_API void rz_analysis_var_storage_dump(
 	RZ_NONNULL RZ_BORROW RzAnalysis *a,
 	RZ_NONNULL RZ_BORROW RZ_OUT RzStrBuf *sb,
-	RZ_NONNULL RZ_BORROW const RzAnalysisVar *var,
 	RZ_NONNULL RZ_BORROW const RzAnalysisVarStorage *storage) {
-	rz_return_if_fail(a && sb && var && storage);
+	rz_return_if_fail(a && sb && storage);
 	switch (storage->type) {
 	case RZ_ANALYSIS_VAR_STORAGE_REG: {
 		rz_strbuf_append(sb, storage->reg);
@@ -103,11 +120,7 @@ RZ_API void rz_analysis_var_storage_dump(
 		break;
 	}
 	case RZ_ANALYSIS_VAR_STORAGE_COMPOSITE: {
-		if (var->origin.kind == RZ_ANALYSIS_VAR_ORIGIN_DWARF && var->origin.DWARF_location && var->origin.DWARF_location->kind == RzBinDwarfLocationKind_COMPOSITE) {
-			rz_bin_dwarf_location_composite_dump(&a->debug_info->dw->encoding, a->debug_info->dwarf_register_mapping, var->origin.DWARF_location->composite, sb, ", ", "");
-		} else {
-			rz_warn_if_reached();
-		}
+		composite_dump(a, sb, storage->composite);
 		break;
 	}
 	case RZ_ANALYSIS_VAR_STORAGE_EVAL_PENDING:
@@ -122,12 +135,28 @@ RZ_API void rz_analysis_var_storage_dump(
 
 RZ_API RZ_OWN char *rz_analysis_var_storage_to_string(
 	RZ_NONNULL RZ_BORROW RzAnalysis *a,
-	RZ_NONNULL RZ_BORROW const RzAnalysisVar *var,
 	RZ_NONNULL RZ_BORROW const RzAnalysisVarStorage *storage) {
-	rz_return_val_if_fail(a && var && storage, NULL);
+	rz_return_val_if_fail(a && storage, NULL);
 	RzStrBuf *sb = rz_strbuf_new(NULL);
-	rz_analysis_var_storage_dump(a, sb, var, storage);
+	rz_analysis_var_storage_dump(a, sb, storage);
 	return rz_strbuf_drain(sb);
+}
+
+static void composite_dump_pj(
+	RZ_NONNULL RZ_BORROW RZ_OUT PJ *pj,
+	RZ_NONNULL RZ_BORROW const RzAnalysisVar *var,
+	RZ_NONNULL RZ_BORROW const RzVector *composite) {
+	pj_k(pj, "composite");
+	pj_a(pj);
+	RzAnalysisVarStoragePiece *piece = NULL;
+	rz_vector_foreach(composite, piece) {
+		pj_o(pj);
+		pj_kn(pj, "offset_in_bits", piece->offset_in_bits);
+		pj_kn(pj, "size_in_bits", piece->size_in_bits);
+		rz_analysis_var_storage_dump_pj(pj, var, piece->storage);
+		pj_end(pj);
+	}
+	pj_end(pj);
 }
 
 RZ_API void rz_analysis_var_storage_dump_pj(
@@ -149,9 +178,11 @@ RZ_API void rz_analysis_var_storage_dump_pj(
 			pj_s(pj, storage->reg);
 			break;
 		case RZ_ANALYSIS_VAR_STORAGE_COMPOSITE:
+			composite_dump_pj(pj, var, storage->composite);
+			break;
 		case RZ_ANALYSIS_VAR_STORAGE_EVAL_PENDING:
 			if (var->origin.kind == RZ_ANALYSIS_VAR_ORIGIN_DWARF) {
-				pj_kn(pj, var_storage_strings[storage->type], var->origin.DWARF_location->offset);
+				pj_kn(pj, var_storage_strings[storage->type], var->origin.DW->location->offset);
 			} else {
 				rz_warn_if_reached();
 			}
@@ -171,6 +202,42 @@ static void storage_poolify(RzAnalysis *analysis, RzAnalysisVarStorage *stor) {
 	if (stor->type == RZ_ANALYSIS_VAR_STORAGE_REG) {
 		stor->reg = rz_str_constpool_get(&analysis->constpool, stor->reg);
 	}
+}
+
+static void RzVector_RzAnalysisVarStoragePiece_fini(void *e, void *u) {
+	rz_analysis_var_storage_piece_fini(e);
+}
+
+RZ_API void rz_analysis_var_storage_init_composite(RzAnalysisVarStorage *sto) {
+	rz_return_if_fail(sto);
+	sto->type = RZ_ANALYSIS_VAR_STORAGE_COMPOSITE;
+	sto->composite = rz_vector_new(
+		sizeof(RzAnalysisVarStoragePiece), RzVector_RzAnalysisVarStoragePiece_fini, NULL);
+}
+
+RZ_API void rz_analysis_var_storage_piece_fini(RzAnalysisVarStoragePiece *p) {
+	if (!p) {
+		return;
+	}
+	rz_analysis_var_storage_free(p->storage);
+}
+
+RZ_API void rz_analysis_var_storage_fini(RzAnalysisVarStorage *sto) {
+	if (!sto) {
+		return;
+	}
+	if (sto->type == RZ_ANALYSIS_VAR_STORAGE_COMPOSITE) {
+		rz_vector_free(sto->composite);
+		sto->composite = NULL;
+	}
+}
+
+RZ_API void rz_analysis_var_storage_free(RzAnalysisVarStorage *sto) {
+	if (!sto) {
+		return;
+	}
+	rz_analysis_var_storage_fini(sto);
+	free(sto);
 }
 
 static const char *__int_type_from_size(int size) {
@@ -257,8 +324,12 @@ RZ_API void rz_analysis_var_resolve_overlaps(RzAnalysisVar *var) {
  * \param name a new name to assign to the variable
  * \return the created or updated variable, or NULL if the operation could not be completed
  */
-RZ_API RZ_BORROW RzAnalysisVar *rz_analysis_function_set_var(RzAnalysisFunction *fcn,
-	RZ_NONNULL RzAnalysisVarStorage *stor, RZ_BORROW RZ_NULLABLE const RzType *type, int size, RZ_NONNULL const char *name) {
+RZ_API RZ_BORROW RzAnalysisVar *rz_analysis_function_set_var(
+	RzAnalysisFunction *fcn,
+	RZ_NONNULL RzAnalysisVarStorage *stor,
+	RZ_BORROW RZ_NULLABLE const RzType *type,
+	int size,
+	RZ_NONNULL const char *name) {
 	rz_return_val_if_fail(fcn && name, NULL);
 	RzAnalysisVar *var = rz_analysis_function_get_var_byname(fcn, name);
 	if (var && !rz_analysis_var_storage_equals(&var->storage, stor)) {
@@ -304,38 +375,29 @@ RZ_API RZ_BORROW RzAnalysisVar *rz_analysis_function_set_var(RzAnalysisFunction 
  *
  * \param fcn the function which the variable will belong to
  * \param var the variable to add or update
- * \param size \p var's type size
  * \return the created or updated variable, or NULL if the operation could not be completed
  */
-RZ_IPI RZ_BORROW RzAnalysisVar *rz_analysis_function_add_var_dwarf(RzAnalysisFunction *fcn, RZ_OWN RzAnalysisVar *var, int size) {
-	rz_return_val_if_fail(fcn && var && var->name, NULL);
-	RzAnalysisVar *old = NULL;
+RZ_IPI RZ_BORROW RzAnalysisVar *rz_analysis_function_add_var(
+	RzAnalysisFunction *fcn, RZ_OWN RzAnalysisVar *var) {
+	rz_return_val_if_fail(fcn && var && var->name && var->type, NULL);
 	void **it;
 	rz_pvector_foreach (&fcn->vars, it) {
 		RzAnalysisVar *p = *it;
-		if (!strcmp(p->name, var->name) || rz_analysis_var_storage_equals(&p->storage, &var->storage)) {
-			old = p;
+		if (p->origin.kind == var->origin.kind) {
+			if (RZ_STR_EQ(p->name, var->name) && rz_analysis_var_storage_equals(&p->storage, &var->storage)) {
+				rz_analysis_var_delete(p);
+				break;
+			}
+		} else if (RZ_STR_EQ(p->name, var->name) || rz_analysis_var_storage_equals(&p->storage, &var->storage)) {
+			rz_analysis_var_delete(p);
 			break;
 		}
 	}
-	if (old) {
-		if (old->origin.kind == RZ_ANALYSIS_VAR_ORIGIN_DWARF) {
-			return NULL;
-		}
-		rz_analysis_var_delete(old);
-	}
 
-	RzAnalysisVar *out = RZ_NEWCOPY(RzAnalysisVar, var);
-	rz_pvector_push(&fcn->vars, out);
-	storage_poolify(fcn->analysis, &out->storage);
-
-	if (var->type) {
-		out->type = rz_type_clone(var->type);
-	} else {
-		out->type = var_type_default(fcn->analysis, size);
-	}
-	rz_analysis_var_resolve_overlaps(out);
-	return out;
+	rz_pvector_push(&fcn->vars, var);
+	storage_poolify(fcn->analysis, &var->storage);
+	rz_analysis_var_resolve_overlaps(var);
+	return var;
 }
 
 /**
@@ -372,6 +434,7 @@ RZ_API void rz_analysis_var_fini(RZ_OWN RzAnalysisVar *var) {
 	rz_vector_fini(&var->constraints);
 	free(var->name);
 	free(var->comment);
+	rz_analysis_var_storage_fini(&var->storage);
 }
 
 RZ_API RZ_OWN RzAnalysisVar *rz_analysis_var_new() {
@@ -1485,39 +1548,74 @@ RZ_API RZ_OWN RzList /*<RzAnalysisVar *>*/ *rz_analysis_var_list(RZ_NONNULL RzAn
 	return list;
 }
 
-static int stackvar_comparator(const RzAnalysisVar *a, const RzAnalysisVar *b) {
-	if (!a || !b || a->storage.type != RZ_ANALYSIS_VAR_STORAGE_STACK || b->storage.type != RZ_ANALYSIS_VAR_STORAGE_STACK) {
-		return 0;
-	}
-	return a->storage.stack_off - b->storage.stack_off;
-}
-
 static int regvar_comparator(const RzAnalysisVar *a, const RzAnalysisVar *b) {
 	return (a && b) ? (a->argnum > b->argnum) - (a->argnum < b->argnum) : 0;
+}
+
+static int var_comparator(const RzAnalysisVar *a, const RzAnalysisVar *b) {
+	if (a->origin.kind == RZ_ANALYSIS_VAR_ORIGIN_DWARF && b->origin.kind == RZ_ANALYSIS_VAR_ORIGIN_DWARF) {
+		return (int)a->origin.DW->offset - b->origin.DW->offset;
+	}
+	if (a->origin.kind != b->origin.kind) {
+		return (int)a->origin.kind - b->origin.kind;
+	}
+	bool aa = rz_analysis_var_is_arg((RzAnalysisVar *)a);
+	bool bb = rz_analysis_var_is_arg((RzAnalysisVar *)a);
+	if ((aa && bb) || (!aa && !bb)) {
+		if (a->storage.type == RZ_ANALYSIS_VAR_STORAGE_REG && b->storage.type == RZ_ANALYSIS_VAR_STORAGE_REG) {
+			return regvar_comparator(a, b);
+		}
+		return rz_analysis_var_storage_cmp(&a->storage, &b->storage);
+	}
+	return aa ? -1 : 1;
 }
 
 /**
  * Populate \p cache with the variables from \p fcn and sort them according to their storage
  */
-RZ_API void rz_analysis_fcn_vars_cache_init(RzAnalysis *analysis, RzAnalysisFcnVarsCache *cache, RzAnalysisFunction *fcn) {
+RZ_API void rz_analysis_fcn_vars_cache_init(
+	RZ_NONNULL RZ_BORROW RzAnalysis *analysis,
+	RZ_NONNULL RZ_BORROW RZ_OUT RzAnalysisFcnVarsCache *cache,
+	RZ_NONNULL RZ_BORROW RzAnalysisFunction *fcn) {
 	rz_return_if_fail(analysis && cache && fcn);
-	cache->regvars = rz_analysis_var_list(fcn, RZ_ANALYSIS_VAR_STORAGE_REG);
-	cache->stackvars = rz_analysis_var_list(fcn, RZ_ANALYSIS_VAR_STORAGE_STACK);
-	rz_list_sort(cache->stackvars, (RzListComparator)stackvar_comparator);
+	cache->sorted_vars = rz_list_new_from_array((const void **)rz_pvector_data(&fcn->vars), rz_pvector_len(&fcn->vars));
+	cache->arg_vars = rz_list_new();
 	RzListIter *it;
 	RzAnalysisVar *var;
-	rz_list_foreach (cache->regvars, it, var) {
+	rz_list_foreach (cache->sorted_vars, it, var) {
 		var->argnum = rz_analysis_var_get_argnum(var);
+		if (rz_analysis_var_is_arg(var)) {
+			rz_list_append(cache->arg_vars, var);
+		}
 	}
-	rz_list_sort(cache->regvars, (RzListComparator)regvar_comparator);
+	rz_list_sort(cache->sorted_vars, (RzListComparator)var_comparator);
+	rz_list_sort(cache->arg_vars, (RzListComparator)var_comparator);
+}
+
+/**
+ * \brief Create variable cache with the variables from \p fcn and sort them according to their storage
+ * \param analysis The RzAnalysis instance
+ * \param fcn The RzAnalysis
+ * \return RzAnalysisFcnVarsCache or NULL
+ */
+RZ_API RZ_OWN RzAnalysisFcnVarsCache *rz_analysis_fcn_vars_cache_from_fcn(
+	RZ_NONNULL RZ_BORROW RzAnalysis *analysis,
+	RZ_NONNULL RZ_BORROW RzAnalysisFunction *fcn) {
+	rz_return_val_if_fail(analysis && fcn, NULL);
+	RzAnalysisFcnVarsCache *cache = RZ_NEW0(RzAnalysisFcnVarsCache);
+	if (!cache) {
+		return NULL;
+	}
+	rz_analysis_fcn_vars_cache_init(analysis, cache, fcn);
+	return cache;
 }
 
 RZ_API void rz_analysis_fcn_vars_cache_fini(RzAnalysisFcnVarsCache *cache) {
 	if (!cache) {
 		return;
 	}
-	rz_list_free(cache->regvars);
-	rz_list_free(cache->stackvars);
+	rz_list_free(cache->sorted_vars);
+	rz_list_free(cache->arg_vars);
 }
 
 static char *sig_from_debuginfo(RzAnalysis *analysis, RZ_NONNULL RzAnalysisFunction *fcn, char *fcn_name, const char *fcn_name_pre, const char *fcn_name_post) {
@@ -1559,6 +1657,14 @@ RZ_API char *rz_analysis_fcn_format_sig(RZ_NONNULL RzAnalysis *analysis, RZ_NONN
 		return NULL;
 	}
 
+	RzAnalysisFcnVarsCache *cache = reuse_cache;
+	if (!cache) {
+		cache = rz_analysis_fcn_vars_cache_from_fcn(analysis, fcn);
+		if (!cache) {
+			return NULL;
+		}
+	}
+
 	char *type_fcn_name = rz_analysis_function_name_guess(analysis->typedb, fcn_name);
 	if (type_fcn_name && rz_type_func_exist(analysis->typedb, type_fcn_name)) {
 		RzType *ret_type = rz_type_func_ret(analysis->typedb, type_fcn_name);
@@ -1581,7 +1687,6 @@ RZ_API char *rz_analysis_fcn_format_sig(RZ_NONNULL RzAnalysis *analysis, RZ_NONN
 	}
 	rz_strbuf_append(buf, "(");
 
-	RzAnalysisFcnVarsCache *cache = reuse_cache;
 	if (type_fcn_name && rz_type_func_exist(analysis->typedb, type_fcn_name)) {
 		int i, argc = rz_type_func_args_count(analysis->typedb, type_fcn_name);
 		bool comma = true;
@@ -1606,68 +1711,25 @@ RZ_API char *rz_analysis_fcn_format_sig(RZ_NONNULL RzAnalysis *analysis, RZ_NONN
 	}
 	RZ_FREE(type_fcn_name);
 
-	if (!cache) {
-		cache = RZ_NEW0(RzAnalysisFcnVarsCache);
-		if (!cache) {
-			type_fcn_name = NULL;
-			goto beach;
-		}
-		rz_analysis_fcn_vars_cache_init(analysis, cache, fcn);
-	}
-
-	bool comma = true;
-	size_t tmp_len;
 	RzAnalysisVar *var;
 	RzListIter *iter;
-
-	rz_list_foreach (cache->regvars, iter, var) {
-		// assume self, error are always the last
-		if (!strcmp(var->name, "self") || !strcmp(var->name, "error")) {
-			rz_strbuf_slice(buf, 0, rz_strbuf_length(buf) - 2);
-			break;
-		}
+	rz_list_foreach (cache->arg_vars, iter, var) {
 		char *vartype = rz_type_as_string(analysis->typedb, var->type);
-		tmp_len = strlen(vartype);
+		size_t tmp_len = strlen(vartype);
 		rz_strbuf_appendf(buf, "%s%s%s%s", vartype,
 			tmp_len && vartype[tmp_len - 1] == '*' ? "" : " ",
 			var->name, iter->n ? ", " : "");
 		free(vartype);
 	}
-
-	RzList *args = rz_list_new();
-	rz_list_foreach (cache->stackvars, iter, var) {
-		if (!rz_analysis_var_is_arg(var)) {
-			continue;
-		}
-
-		if (var->kind == RZ_ANALYSIS_VAR_KIND_FORMAL_PARAMETER) {
-			rz_list_prepend(args, var);
-		} else {
-			rz_list_append(args, var);
-		}
-	}
-	rz_list_foreach (args, iter, var) {
-		if (!rz_list_empty(cache->regvars) && comma) {
-			rz_strbuf_append(buf, ", ");
-			comma = false;
-		}
-		char *vartype = rz_type_as_string(analysis->typedb, var->type);
-		tmp_len = strlen(vartype);
-		rz_strbuf_appendf(buf, "%s%s%s%s", vartype,
-			tmp_len && vartype[tmp_len - 1] == '*' ? "" : " ",
-			var->name, iter->n ? ", " : "");
-		free(vartype);
-	}
-	rz_list_free(args);
 
 beach:
-	rz_strbuf_append(buf, ");");
 	RZ_FREE(type_fcn_name);
 	if (!reuse_cache && cache) {
 		// !reuse_cache => we created our own cache
 		rz_analysis_fcn_vars_cache_fini(cache);
 		free(cache);
 	}
+	rz_strbuf_append(buf, ");");
 	return rz_strbuf_drain(buf);
 }
 

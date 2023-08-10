@@ -3,10 +3,9 @@
 
 #include <rz_core.h>
 
-RZ_API char *rz_core_bin_dwarf_abbrev_decl_to_string(RzBinDwarfAbbrevDecl *decl) {
-	if (!decl) {
-		return NULL;
-	}
+RZ_API RZ_OWN char *rz_core_bin_dwarf_abbrev_decl_to_string(
+	RZ_NONNULL RZ_BORROW RzBinDwarfAbbrevDecl *decl) {
+	rz_return_val_if_fail(decl, NULL);
 	RzStrBuf *sb = rz_strbuf_new(NULL);
 	if (!sb) {
 		return NULL;
@@ -51,10 +50,9 @@ static bool abbrev_table_dump_cb(void *user, ut64 k, const void *v) {
 	return true;
 }
 
-RZ_API char *rz_core_bin_dwarf_abbrevs_to_string(const RzBinDwarfDebugAbbrevs *abbrevs) {
-	if (!abbrevs) {
-		return NULL;
-	}
+RZ_API RZ_OWN char *rz_core_bin_dwarf_abbrevs_to_string(
+	RZ_NONNULL RZ_BORROW const RzBinDwarfDebugAbbrevs *abbrevs) {
+	rz_return_val_if_fail(abbrevs, NULL);
 	RzStrBuf *sb = rz_strbuf_new(NULL);
 	if (!sb) {
 		return NULL;
@@ -63,7 +61,8 @@ RZ_API char *rz_core_bin_dwarf_abbrevs_to_string(const RzBinDwarfDebugAbbrevs *a
 	return rz_strbuf_drain(sb);
 }
 
-RZ_API char *rz_core_bin_dwarf_attr_to_string(const RzBinDwarfAttr *val) {
+RZ_API RZ_OWN char *rz_core_bin_dwarf_attr_to_string(
+	RZ_NONNULL RZ_BORROW const RzBinDwarfAttr *val) {
 	rz_return_val_if_fail(val, NULL);
 	RzStrBuf *sb = rz_strbuf_new(NULL);
 	if (!sb) {
@@ -153,7 +152,8 @@ RZ_API char *rz_core_bin_dwarf_attr_to_string(const RzBinDwarfAttr *val) {
 	return rz_strbuf_drain(sb);
 }
 
-RZ_API char *rz_core_bin_dwarf_debug_info_to_string(const RzBinDwarfDebugInfo *info) {
+RZ_API RZ_OWN char *rz_core_bin_dwarf_debug_info_to_string(
+	RZ_NONNULL RZ_BORROW const RzBinDwarfDebugInfo *info) {
 	rz_return_val_if_fail(info, NULL);
 	RzStrBuf *sb = rz_strbuf_new(NULL);
 	if (!sb) {
@@ -231,8 +231,10 @@ static bool htup_loclists_cb(void *u, ut64 k, const void *v) {
 	return true;
 }
 
-RZ_API char *rz_core_bin_dwarf_loc_to_string(RzBinDwarf *dw, RzBinDwarfLocListTable *loclists, int addr_size) {
-	rz_return_val_if_fail(loclists && loclists->loclist_by_offset, NULL);
+RZ_API RZ_OWN char *rz_core_bin_dwarf_loc_to_string(
+	RZ_NONNULL RZ_BORROW RzBinDwarf *dw,
+	RZ_NONNULL RZ_BORROW RzBinDwarfLocListTable *loclists) {
+	rz_return_val_if_fail(dw && loclists && loclists->loclist_by_offset, NULL);
 	RzStrBuf *sb = rz_strbuf_new(NULL);
 	if (!sb) {
 		return NULL;
@@ -247,7 +249,8 @@ RZ_API char *rz_core_bin_dwarf_loc_to_string(RzBinDwarf *dw, RzBinDwarfLocListTa
 	return rz_strbuf_drain(sb);
 }
 
-RZ_API char *rz_core_bin_dwarf_aranges_to_string(RzList /*<RzBinDwarfARangeSet *>*/ *aranges) {
+RZ_API RZ_OWN char *rz_core_bin_dwarf_aranges_to_string(
+	RZ_NONNULL RZ_BORROW RzList /*<RzBinDwarfARangeSet *>*/ *aranges) {
 	rz_return_val_if_fail(aranges, NULL);
 	RzStrBuf *sb = rz_strbuf_new(NULL);
 	if (!sb) {
@@ -339,10 +342,9 @@ static void print_line_op(RzStrBuf *sb, RzBinDwarfLineOp *op, RzBinDwarfLineHead
 	rz_strbuf_append(sb, "\n");
 }
 
-RZ_API char *rz_core_bin_dwarf_line_unit_to_string(RzBinDwarfLineUnit *unit) {
-	if (!unit) {
-		return NULL;
-	}
+RZ_API RZ_OWN char *rz_core_bin_dwarf_line_unit_to_string(
+	RZ_NONNULL RZ_BORROW RzBinDwarfLineUnit *unit) {
+	rz_return_val_if_fail(unit, NULL);
 	RzStrBuf *sb = rz_strbuf_new(NULL);
 	if (!sb) {
 		return NULL;
@@ -395,7 +397,8 @@ RZ_API char *rz_core_bin_dwarf_line_unit_to_string(RzBinDwarfLineUnit *unit) {
 	return rz_strbuf_drain(sb);
 }
 
-RZ_API char *rz_core_bin_dwarf_line_units_to_string(RzList /*<RzBinDwarfLineUnit *>*/ *lines) {
+RZ_API RZ_OWN char *rz_core_bin_dwarf_line_units_to_string(
+	RZ_NONNULL RZ_BORROW RzList /*<RzBinDwarfLineUnit *>*/ *lines) {
 	rz_return_val_if_fail(lines, NULL);
 	RzStrBuf *sb = rz_strbuf_new(NULL);
 	if (!sb) {
@@ -437,7 +440,8 @@ static bool htup_rnglists_cb(void *u, ut64 k, const void *v) {
 	return true;
 }
 
-RZ_API char *rz_core_bin_dwarf_rnglists_to_string(RzBinDwarfRngListTable *rnglists) {
+RZ_API RZ_OWN char *rz_core_bin_dwarf_rnglists_to_string(
+	RZ_NONNULL RZ_BORROW RzBinDwarfRngListTable *rnglists) {
 	rz_warn_if_fail(rnglists && rnglists->rnglist_by_offset);
 	RzStrBuf *sb = rz_strbuf_new(NULL);
 	if (!sb) {

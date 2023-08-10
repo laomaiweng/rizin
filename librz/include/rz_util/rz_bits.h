@@ -8,6 +8,11 @@
 extern "C" {
 #endif
 
+/**
+ * \brief Get the number of leading zeros of a 64-bit integer in binary representation.
+ * \param x the 64-bit integer
+ * \return the number of leading zeros
+ */
 static inline int rz_bits_leading_zeros(ut64 x) {
 #if HAS___BUILTIN_CLZLL
 	return __builtin_clzll(x);

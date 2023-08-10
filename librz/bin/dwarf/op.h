@@ -66,7 +66,7 @@ typedef enum {
 /// consumers inspect the DWARF expression without reimplementing the
 /// decoding operation.
 typedef struct {
-	enum DW_OP opcode;
+	DW_OP opcode;
 	OperationKind kind;
 	/// Dereference the topmost value of the stack.
 	union {

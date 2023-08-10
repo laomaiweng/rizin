@@ -23,7 +23,7 @@ static bool RzBinDwarfDie_attrs_parse(RzBuffer *buffer, RzBinDwarfDie *die, RzBi
 	ut64 line_info_offset = UT64_MAX;
 
 	RZ_LOG_SILLY("0x%" PFMT64x ":\t%s%s [%" PFMT64d "] %s\n",
-		die->offset, indent_str(die->depth), rz_bin_dwarf_tag(die->tag),
+		die->offset, rz_str_indent(die->depth), rz_bin_dwarf_tag(die->tag),
 		die->abbrev_code, rz_bin_dwarf_children(die->has_children));
 	RzBinDwarfAttrDef *def = NULL;
 	rz_vector_foreach(&abbrev->defs, def) {
@@ -47,7 +47,7 @@ static bool RzBinDwarfDie_attrs_parse(RzBuffer *buffer, RzBinDwarfDie *die, RzBi
 #if RZ_BUILD_DEBUG
 		char *data = RzBinDwarfAttr_to_string(&attr);
 		RZ_LOG_SILLY("0x%" PFMT64x ":\t%s\t%s [%s] (%s)\n",
-			rz_buf_tell(buffer), indent_str(die->depth), rz_bin_dwarf_attr(def->name),
+			rz_buf_tell(buffer), rz_str_indent(die->depth), rz_bin_dwarf_attr(def->name),
 			rz_bin_dwarf_form(def->form), rz_str_get(data));
 		free(data);
 #endif
@@ -140,7 +140,7 @@ static bool RzBinDwarfCompUnit_dies_parse(RzBuffer *buffer, RzBinDwarfCompUnit *
 		};
 		// there can be "null" entries that have abbr_code == 0
 		if (!abbrev_code) {
-			RZ_LOG_SILLY("0x%" PFMT64x ":\t%sNULL\n", offset, indent_str(die.depth));
+			RZ_LOG_SILLY("0x%" PFMT64x ":\t%sNULL\n", offset, rz_str_indent(die.depth));
 			rz_vector_push(&unit->dies, &die);
 			depth--;
 			if (depth <= 0) {

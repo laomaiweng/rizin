@@ -1591,7 +1591,7 @@ static bool fixup_regoff_to_stackoff(RzAnalysis *a, RzAnalysisFunction *f, RzAna
 	}
 	ut16 reg = dw_var->location->register_number;
 	st64 off = dw_var->location->offset;
-	if (!strcmp(a->cpu, "x86")) {
+	if (RZ_STR_EQ(a->cpu, "x86")) {
 		if (a->bits == 64) {
 			if (reg == 6) { // 6 = rbp
 				rz_analysis_var_storage_init_stack(&var->storage, off - f->bp_off);
@@ -1611,24 +1611,24 @@ static bool fixup_regoff_to_stackoff(RzAnalysis *a, RzAnalysisFunction *f, RzAna
 				return true;
 			}
 		}
-	} else if (!strcmp(a->cpu, "ppc")) {
+	} else if (RZ_STR_EQ(a->cpu, "ppc")) {
 		if (reg == 1) { // 1 = r1
 			rz_analysis_var_storage_init_stack(&var->storage, off);
 			return true;
 		}
-	} else if (!strcmp(a->cpu, "tricore")) {
+	} else if (RZ_STR_EQ(a->cpu, "tricore")) {
 		if (reg == 30) { // 30 = a14
 			rz_analysis_var_storage_init_stack(&var->storage, off);
 			return true;
 		}
 	}
 	const char *SP = rz_reg_get_name(a->reg, RZ_REG_NAME_SP);
-	if (SP && strcmp(SP, reg_name) == 0) {
+	if (SP && RZ_STR_EQ(SP, reg_name)) {
 		rz_analysis_var_storage_init_stack(&var->storage, off);
 		return true;
 	}
 	const char *BP = rz_reg_get_name(a->reg, RZ_REG_NAME_BP);
-	if (BP && strcmp(BP, reg_name) == 0) {
+	if (BP && RZ_STR_EQ(BP, reg_name)) {
 		rz_analysis_var_storage_init_stack(&var->storage, off - f->bp_off);
 		return true;
 	}

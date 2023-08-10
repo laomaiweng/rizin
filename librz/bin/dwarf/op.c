@@ -6,7 +6,7 @@
 
 static bool RzBinDwarfLocation_move(RzBinDwarfLocation *self, RzBinDwarfLocation *out) {
 	rz_return_val_if_fail(self && out, false);
-	memcpy(out, self, sizeof(RzBinDwarfLocation));
+	rz_mem_copy(out, sizeof(RzBinDwarfLocation), self, sizeof(RzBinDwarfLocation));
 	switch (self->kind) {
 	case RzBinDwarfLocationKind_EMPTY:
 	case RzBinDwarfLocationKind_DECODE_ERROR:

@@ -4,42 +4,6 @@
 #include <rz_bin_dwarf.h>
 #include "dwarf_private.h"
 
-static inline int leading_zeros(ut64 x) {
-#if HAS___BUILTIN_CLZLL
-	return __builtin_clzll(x);
-#else
-	int n = 0;
-	if (x == 0)
-		return 64;
-
-	if (x <= 0x00000000FFFFFFFFULL) {
-		n = n + 32;
-		x = x << 32;
-	}
-	if (x <= 0x0000FFFFFFFFFFFFULL) {
-		n = n + 16;
-		x = x << 16;
-	}
-	if (x <= 0x00FFFFFFFFFFFFFFULL) {
-		n = n + 8;
-		x = x << 8;
-	}
-	if (x <= 0x0FFFFFFFFFFFFFFFULL) {
-		n = n + 4;
-		x = x << 4;
-	}
-	if (x <= 0x3FFFFFFFFFFFFFFFULL) {
-		n = n + 2;
-		x = x << 2;
-	}
-	if (x <= 0x7FFFFFFFFFFFFFFFULL) {
-		n = n + 1;
-	}
-
-	return n;
-#endif
-}
-
 static inline int64_t sign_extend(ut64 value, ut64 mask) {
 	int64_t masked_value = (int64_t)(value & mask);
 	int64_t sign = (int64_t)((mask >> 1) + 1);
@@ -47,7 +11,7 @@ static inline int64_t sign_extend(ut64 value, ut64 mask) {
 }
 
 static inline uint32_t mask_bit_size(ut64 addr_mask) {
-	return 64 - leading_zeros(addr_mask);
+	return 64 - rz_bits_leading_zeros(addr_mask);
 }
 
 static uint32_t bit_size(RzBinDwarfValueType type, ut64 addr_mask) {

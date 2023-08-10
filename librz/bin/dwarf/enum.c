@@ -7,26 +7,6 @@
 #define DW_(x) \
 	case x: return #x;
 
-static const char *indent_tbl[] = {
-	"",
-	"\t",
-	"\t\t",
-	"\t\t\t",
-	"\t\t\t\t",
-	"\t\t\t\t\t",
-	"\t\t\t\t\t\t",
-};
-
-RZ_IPI const char *indent_str(int indent) {
-	if (indent < 0) {
-		return "";
-	}
-	if (indent >= RZ_ARRAY_SIZE(indent_tbl)) {
-		indent = 6;
-	}
-	return indent_tbl[indent];
-}
-
 static const char *dwarf_tag_name_encodings[] = {
 	[DW_TAG_null_entry] = "DW_TAG_null_entry",
 	[DW_TAG_array_type] = "DW_TAG_array_type",

@@ -564,9 +564,12 @@ static const char *die_name_const(const RzBinDwarfDie *die) {
 	return rz_bin_dwarf_attr_get_string(attr);
 }
 
+static char *anonymous_name(const char *t, ut64 offset) {
+	return rz_str_newf("anonymous_%s_0x%" PFMT64x, t, offset);
+}
+
 static char *anonymous_type_name(RzBaseTypeKind k, ut64 offset) {
-	return rz_str_newf("anonymous_%s_0x%" PFMT64x,
-		rz_type_base_type_kind_as_string(k), offset);
+	return anonymous_name(rz_type_base_type_kind_as_string(k), offset);
 }
 
 /**
@@ -1003,7 +1006,7 @@ static RzTypeStructMember *struct_member_parse(Context *ctx, RzBinDwarfDie *die,
 	rz_vector_foreach(&die->attrs, attr) {
 		switch (attr->name) {
 		case DW_AT_name:
-			name = die_name(die);
+			name = rz_str_new(rz_bin_dwarf_attr_get_string(attr));
 			break;
 		case DW_AT_type:
 			type = type_parse_from_offset(ctx, attr->reference, &size);
@@ -1039,7 +1042,12 @@ static RzTypeStructMember *struct_member_parse(Context *ctx, RzBinDwarfDie *die,
 		}
 	}
 
-	if (!(type && name)) {
+	if (!name) {
+		name = anonymous_name("member", die->offset);
+	}
+	if (!type) {
+		RZ_LOG_WARN("DWARF [0x%" PFMT64x "] struct member missing type\n",
+			die->offset);
 		goto cleanup;
 	}
 	result->name = name;

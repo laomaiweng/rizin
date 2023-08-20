@@ -982,13 +982,16 @@ static RzType *type_parse_from_abstract_origin(Context *ctx, ut64 offset, char *
 			break;
 		}
 	}
-	const char *prefer_name = (prefer_linkage_name(ctx->unit->language) && linkname) ? linkname : name ? name
-													   : linkname;
-	if (!(prefer_name && type)) {
-		rz_type_free(type);
+	if (!type) {
 		return NULL;
 	}
-	*name_out = strdup(prefer_name);
+	if (name_out) {
+		const char *prefer_name = (prefer_linkage_name(ctx->unit->language) && linkname)
+			? linkname
+			: name ? name
+			       : linkname;
+		*name_out = rz_str_new(prefer_name);
+	}
 	return type;
 }
 
@@ -1353,18 +1356,18 @@ static bool function_var_parse(Context *ctx, RzAnalysisDwarfFunction *f, const R
 	}
 
 	bool has_location = false;
-	const RzBinDwarfAttr *val;
-	rz_vector_foreach(&var_die->attrs, val) {
-		switch (val->name) {
+	const RzBinDwarfAttr *attr;
+	rz_vector_foreach(&var_die->attrs, attr) {
+		switch (attr->name) {
 		case DW_AT_name:
-			v->name = rz_str_new(rz_bin_dwarf_attr_get_string(val));
+			v->name = rz_str_new(rz_bin_dwarf_attr_get_string(attr));
 			break;
 		case DW_AT_linkage_name:
 		case DW_AT_MIPS_linkage_name:
-			v->link_name = rz_str_new(rz_bin_dwarf_attr_get_string(val));
+			v->link_name = rz_str_new(rz_bin_dwarf_attr_get_string(attr));
 			break;
 		case DW_AT_type: {
-			RzType *type = type_parse_from_offset(ctx, val->reference, NULL);
+			RzType *type = type_parse_from_offset(ctx, attr->reference, NULL);
 			if (type) {
 				rz_type_free(v->type);
 				v->type = type;
@@ -1372,14 +1375,14 @@ static bool function_var_parse(Context *ctx, RzAnalysisDwarfFunction *f, const R
 		} break;
 		// abstract origin is supposed to have omitted information
 		case DW_AT_abstract_origin: {
-			RzType *type = type_parse_from_abstract_origin(ctx, val->reference, &v->name);
+			RzType *type = type_parse_from_abstract_origin(ctx, attr->reference, &v->name);
 			if (type) {
 				rz_type_free(v->type);
 				v->type = type;
 			}
 		} break;
 		case DW_AT_location:
-			v->location = location_parse(ctx, var_die, val, fn_die);
+			v->location = location_parse(ctx, var_die, attr, fn_die);
 			has_location = true;
 			break;
 		default:
@@ -1387,6 +1390,9 @@ static bool function_var_parse(Context *ctx, RzAnalysisDwarfFunction *f, const R
 		}
 	}
 
+	if (!v->name) {
+		v->name = anonymous_name("var", v->offset);
+	}
 	if (!has_location) {
 		v->location = RzBinDwarfLocation_with_kind(RzBinDwarfLocationKind_EMPTY);
 	} else if (!v->location) {

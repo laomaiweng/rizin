@@ -1680,22 +1680,16 @@ RZ_API void rz_analysis_dwarf_process_info(const RzAnalysis *analysis, RzBinDwar
 	};
 	RzBinDwarfCompUnit *unit;
 	rz_vector_foreach(&dw->info->units, unit) {
-		if (rz_vector_len(&unit->dies) <= 0) {
+		if (rz_vector_empty(&unit->dies)) {
 			continue;
 		}
 		ctx.unit = unit;
-		RzBinDwarfDie *die = rz_vector_head(&unit->dies);
-		void *end = unit->dies.a + unit->dies.len * unit->dies.elem_size;
-		while (true) {
+		for (RzBinDwarfDie *die = rz_vector_head(&unit->dies);
+			(ut8 *)die < (ut8 *)unit->dies.a + unit->dies.len * unit->dies.elem_size;
+			(die->sibling > die->offset)
+				? die = ht_up_find(dw->info->die_tbl, die->sibling, NULL)
+				: ++die) {
 			process_die(&ctx, die);
-			if (die->sibling > die->offset) {
-				die = ht_up_find(dw->info->die_tbl, die->sibling, NULL);
-			} else {
-				die++;
-			}
-			if ((void *)die >= end) {
-				break;
-			}
 		}
 	}
 	ht_pp_foreach(analysis->debug_info->base_type_by_name, process_base_type, (void *)analysis);

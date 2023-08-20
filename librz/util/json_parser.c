@@ -9,6 +9,7 @@
 #include <rz_util/rz_json.h>
 #include <rz_util/rz_assert.h>
 #include <rz_util/rz_pj.h>
+#include <float.h>
 
 #if 0
 // optional error printing
@@ -566,4 +567,51 @@ RZ_API RZ_OWN char *rz_json_as_string(const RzJson *json, bool with_key) {
 	}
 	json_pj_recurse(json, pj, with_key);
 	return pj_drain(pj);
+}
+
+RZ_API bool rz_json_eq(const RzJson *a, const RzJson *b) {
+	if (a->type != b->type) {
+		return false;
+	}
+	if (a->key && b->key && RZ_STR_NE(a->key, b->key)) {
+		return false;
+	}
+	switch (a->type) {
+	case RZ_JSON_NULL: return true;
+	case RZ_JSON_OBJECT:
+	case RZ_JSON_ARRAY: {
+		RzJson *a_child, *b_child;
+		for (a_child = a->children.first, b_child = b->children.first;
+			a_child && b_child;
+			a_child = a_child->next, b_child = b_child->next) {
+			if (!rz_json_eq(a_child, b_child)) {
+				return false;
+			}
+		}
+		return !a_child && !b_child;
+	}
+	case RZ_JSON_STRING: return RZ_STR_EQ(a->str_value, b->str_value);
+	case RZ_JSON_INTEGER: return a->num.u_value == b->num.u_value;
+	case RZ_JSON_DOUBLE: return fabs(a->num.dbl_value - b->num.dbl_value) < FLT_EPSILON;
+	case RZ_JSON_BOOLEAN: return a->num.u_value == b->num.u_value;
+	default: break;
+	}
+	return false;
+}
+
+RZ_API bool rz_json_string_eq(const char *sa, const char *sb) {
+	rz_return_val_if_fail(sa && sb, 0);
+	RzJson *a = rz_json_parse((char *)sa);
+	if (!a) {
+		return false;
+	}
+	RzJson *b = rz_json_parse((char *)sb);
+	if (!b) {
+		rz_json_free(a);
+		return false;
+	}
+	bool ret = rz_json_eq(a, b);
+	rz_json_free(a);
+	rz_json_free(b);
+	return ret;
 }

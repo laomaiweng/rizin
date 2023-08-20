@@ -1771,6 +1771,8 @@ RZ_API void rz_analysis_var_storage_piece_fini(RzAnalysisVarStoragePiece *p);
 RZ_API void rz_analysis_var_storage_fini(RzAnalysisVarStorage *sto);
 RZ_API void rz_analysis_var_storage_free(RzAnalysisVarStorage *sto);
 
+RZ_API const char *rz_analysis_var_kind_as_string(RzAnalysisVarKind k);
+RZ_API RzAnalysisVarKind rz_analysis_var_kind_from_string(const char *s);
 // Get the variable that var is written to at one of its accesses
 // Useful for cases where a register-based argument is written away into a stack variable,
 // so if var is the reg arg then this will return the stack var.
@@ -2239,19 +2241,26 @@ RZ_API RzAnalysisDebugInfo *rz_analysis_debug_info_new();
 RZ_API void rz_analysis_debug_info_free(RzAnalysisDebugInfo *debuginfo);
 
 /* serialize */
+
+typedef void *RzSerializeAnalysisVarParser;
+typedef void *RzSerializeAnalysisGlobalVarParser;
+typedef struct {
+	RzAnalysis *analysis;
+	RzKeyParser *parser;
+	RzSerializeAnalysisVarParser var_parser;
+	RzKeyParser *storage_parser;
+	RzKeyParser *piece_parser;
+} RzSerializeAnalysisFunctionLoadCtx;
+
 RZ_API void rz_serialize_analysis_case_op_save(RZ_NONNULL PJ *j, RZ_NONNULL RzAnalysisCaseOp *op);
 RZ_API void rz_serialize_analysis_switch_op_save(RZ_NONNULL PJ *j, RZ_NONNULL RzAnalysisSwitchOp *op);
 RZ_API RzAnalysisSwitchOp *rz_serialize_analysis_switch_op_load(RZ_NONNULL const RzJson *json);
 
 RZ_API void rz_serialize_analysis_blocks_save(RZ_NONNULL Sdb *db, RZ_NONNULL RzAnalysis *analysis);
 
-RZ_API void rz_serialize_typelinks_save(RZ_NONNULL Sdb *db, RZ_NONNULL const RzAnalysis *analysis);
-RZ_API bool rz_serialize_typelinks_load(RZ_NONNULL Sdb *db, RZ_NONNULL RzAnalysis *analysis, RZ_NULLABLE RzSerializeResultInfo *res);
-
-typedef void *RzSerializeAnalGlobalVarParser;
-RZ_API void rz_serialize_analysis_global_var_save(RZ_NONNULL Sdb *db, RZ_NONNULL RzAnalysis *anal);
-RZ_API RzSerializeAnalGlobalVarParser rz_serialize_analysis_global_var_parser_new(void);
-RZ_API void rz_serialize_analysis_global_var_parser_free(RzSerializeAnalGlobalVarParser parser);
+RZ_API void rz_serialize_analysis_global_var_save(RZ_NONNULL Sdb *db, RZ_NONNULL RzAnalysis *a);
+RZ_API RzSerializeAnalysisGlobalVarParser rz_serialize_analysis_global_var_parser_new(void);
+RZ_API void rz_serialize_analysis_global_var_parser_free(RzSerializeAnalysisGlobalVarParser parser);
 RZ_API bool rz_serialize_analysis_global_var_load(RZ_NONNULL Sdb *db, RZ_NONNULL RzAnalysis *analysis, RZ_NULLABLE RzSerializeResultInfo *res);
 
 /**
@@ -2260,13 +2269,18 @@ RZ_API bool rz_serialize_analysis_global_var_load(RZ_NONNULL Sdb *db, RZ_NONNULL
  */
 RZ_API bool rz_serialize_analysis_blocks_load(RZ_NONNULL Sdb *db, RZ_NONNULL RzAnalysis *analysis, RZ_NULLABLE RzSerializeResultInfo *res);
 
-typedef void *RzSerializeAnalysisVarParser;
 RZ_API RzSerializeAnalysisVarParser rz_serialize_analysis_var_parser_new(void);
 RZ_API void rz_serialize_analysis_var_parser_free(RzSerializeAnalysisVarParser parser);
 RZ_API RzSerializeAnalysisVarParser rz_serialize_analysis_var_storage_parser_new(void);
 
-RZ_API RZ_NULLABLE RzAnalysisVar *rz_serialize_analysis_var_load(RzAnalysisFunction *fcn, RzSerializeAnalysisVarParser parser, const RzJson *json, RzKeyParser *storage_parser);
-RZ_API bool rz_serialize_analysis_var_storage_load(RZ_NONNULL RzAnalysisFunction *fcn, RZ_NONNULL RzSerializeAnalysisVarParser parser, RZ_NONNULL const RzJson *json, RZ_NONNULL RZ_BORROW RzAnalysisVarStorage *storage);
+RZ_API RZ_OWN RzAnalysisVar *rz_serialize_analysis_var_load(
+	RZ_NONNULL RzSerializeAnalysisFunctionLoadCtx *ctx,
+	RZ_NONNULL RzAnalysisFunction *fcn,
+	RZ_NONNULL const RzJson *json);
+RZ_API bool rz_serialize_analysis_var_storage_load(
+	RZ_NONNULL RzSerializeAnalysisFunctionLoadCtx *ctx,
+	RZ_NONNULL const RzJson *json,
+	RZ_NONNULL RZ_BORROW RZ_OUT RzAnalysisVarStorage *storage);
 
 /**
  * Save useful infomation when analyze and disassemble bytes

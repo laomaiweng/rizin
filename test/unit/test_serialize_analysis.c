@@ -423,7 +423,15 @@ bool test_analysis_function_noreturn_load() {
 
 Sdb *vars_ref_db() {
 	Sdb *db = sdb_new0();
-	sdb_set(db, "0x539", "{\"name\":\"hirsch\",\"bits\":64,\"type\":0,\"stack\":0,\"maxstack\":0,\"ninstr\":0,\"bp_frame\":true,\"bbs\":[],\"vars\":[{\"name\":\"arg_rax\",\"type\":\"int64_t\",\"storage\":{\"type\":\"reg\",\"reg\":\"rax\"},\"accs\":[{\"off\":3,\"type\":\"r\",\"reg\":\"rax\"},{\"off\":13,\"type\":\"rw\",\"sp\":-13,\"reg\":\"rbx\"},{\"off\":23,\"type\":\"w\",\"sp\":123,\"reg\":\"rcx\"}],\"constrs\":[0,42,1,84,2,126,3,168,4,210,5,252,6,294,7,336,8,378,9,420,10,462,11,504,12,546,13,588,14,630,15,672]},{\"name\":\"var_0h\",\"type\":\"const char *\",\"storage\":{\"type\":\"stack\",\"stack\":0},\"accs\":[{\"off\":3,\"type\":\"w\",\"sp\":321,\"reg\":\"rsp\"}]},{\"name\":\"var_10h\",\"type\":\"struct something\",\"storage\":{\"type\":\"stack\",\"stack\":-16}},{\"name\":\"arg_8h\",\"type\":\"uint64_t\",\"storage\":{\"type\":\"stack\",\"stack\":8},\"cmt\":\"I have no idea what this var does\"}]}",
+	sdb_set(db, "0x539",
+		"{\"name\":\"hirsch\",\"bits\":64,\"type\":0,\"stack\":0,\"maxstack\":0,\"ninstr\":0,\"bp_frame\":true,\"bbs\":[],"
+		"\"vars\":["
+		"{\"name\":\"arg_rax\",\"type\":\"int64_t\",\"storage\":{\"type\":\"reg\",\"reg\":\"rax\"},\"accs\":[{\"off\":3,\"type\":\"r\",\"reg\":\"rax\"},{\"off\":13,\"type\":\"rw\",\"sp\":-13,\"reg\":\"rbx\"},{\"off\":23,\"type\":\"w\",\"sp\":123,\"reg\":\"rcx\"}],\"constrs\":[0,42,1,84,2,126,3,168,4,210,5,252,6,294,7,336,8,378,9,420,10,462,11,504,12,546,13,588,14,630,15,672]},"
+		"{\"name\":\"var_0h\",\"type\":\"const char *\",\"storage\":{\"type\":\"stack\",\"stack\":0},\"accs\":[{\"off\":3,\"type\":\"w\",\"sp\":321,\"reg\":\"rsp\"}]},"
+		"{\"name\":\"var_10h\",\"type\":\"struct something\",\"storage\":{\"type\":\"stack\",\"stack\":-16}},"
+		"{\"name\":\"arg_8h\",\"type\":\"uint64_t\",\"storage\":{\"type\":\"stack\",\"stack\":8},\"cmt\":\"I have no idea what this var does\"},"
+		"{\"name\":\"arg_18h\",\"type\":\"struct something\",\"storage\":{\"type\":\"composite\",\"composite\":[{\"offset_in_bits\":0,\"size_in_bits\":32,\"storage\":{\"type\":\"reg\",\"reg\":\"rax\"}},{\"offset_in_bits\":32,\"size_in_bits\":32,\"storage\":{\"type\":\"reg\",\"reg\":\"rbx\"}}]}}"
+		"]}",
 		0);
 	return db;
 }
@@ -480,11 +488,30 @@ bool test_analysis_var_save() {
 	v = rz_analysis_function_set_var(f, &stor, t_uint64_t, 0, "arg_8h");
 	v->comment = strdup("I have no idea what this var does");
 
+	rz_analysis_var_storage_init_composite(&stor);
+	RzAnalysisVarStoragePiece p1 = {
+		.offset_in_bits = 0,
+		.size_in_bits = 32,
+		.storage = RZ_NEW0(RzAnalysisVarStorage)
+	};
+	p1.storage->type = RZ_ANALYSIS_VAR_STORAGE_REG;
+	p1.storage->reg = strdup("rax");
+	RzAnalysisVarStoragePiece p2 = {
+		.offset_in_bits = 32,
+		.size_in_bits = 32,
+		.storage = RZ_NEW0(RzAnalysisVarStorage)
+	};
+	p2.storage->type = RZ_ANALYSIS_VAR_STORAGE_REG;
+	p2.storage->reg = strdup("rbx");
+	rz_vector_push(stor.composite, &p1);
+	rz_vector_push(stor.composite, &p2);
+	rz_analysis_function_set_var(f, &stor, t_struct_something, 0, "var_18h");
+
 	Sdb *db = sdb_new0();
 	rz_serialize_analysis_functions_save(db, analysis);
 
 	Sdb *expected = vars_ref_db();
-	assert_sdb_eq(db, expected, "functions save");
+	assert_sdb_json_eq(db, expected, "functions save");
 	sdb_free(db);
 	sdb_free(expected);
 	rz_analysis_free(analysis);

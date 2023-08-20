@@ -146,7 +146,6 @@ static void composite_dump_pj(
 	RZ_NONNULL RZ_BORROW RZ_OUT PJ *pj,
 	RZ_NONNULL RZ_BORROW const RzAnalysisVar *var,
 	RZ_NONNULL RZ_BORROW const RzVector /*<RzAnalysisVarStoragePiece *>*/ *composite) {
-	pj_k(pj, "composite");
 	pj_a(pj);
 	RzAnalysisVarStoragePiece *piece = NULL;
 	rz_vector_foreach(composite, piece) {
@@ -238,6 +237,28 @@ RZ_API void rz_analysis_var_storage_free(RzAnalysisVarStorage *sto) {
 	}
 	rz_analysis_var_storage_fini(sto);
 	free(sto);
+}
+
+static const char *RzAnalysisVarKind_strings[] = {
+	[RZ_ANALYSIS_VAR_KIND_FORMAL_PARAMETER] = "formal_parameter",
+	[RZ_ANALYSIS_VAR_KIND_VARIABLE] = "variable",
+	[RZ_ANALYSIS_VAR_KIND_INVALID] = "invalid",
+};
+
+RZ_API const char *rz_analysis_var_kind_as_string(RzAnalysisVarKind k) {
+	if (k < 0 || k >= RZ_ARRAY_SIZE(RzAnalysisVarKind_strings)) {
+		return NULL;
+	}
+	return RzAnalysisVarKind_strings[k];
+}
+
+RZ_API RzAnalysisVarKind rz_analysis_var_kind_from_string(const char *s) {
+	for (int i = 0; i < RZ_ARRAY_SIZE(RzAnalysisVarKind_strings); ++i) {
+		if (RZ_STR_EQ(s, RzAnalysisVarKind_strings[i])) {
+			return i;
+		}
+	}
+	return RZ_ANALYSIS_VAR_KIND_INVALID;
 }
 
 static const char *__int_type_from_size(int size) {

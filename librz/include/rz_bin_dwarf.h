@@ -1069,9 +1069,14 @@ typedef struct dwarf_attr_t {
 /**
  * \brief Safely get the string content from an RzBinDwarfAttrValue if it has one.
  */
-static inline const char *rz_bin_dwarf_attr_get_string(const RzBinDwarfAttr *val) {
-	rz_return_val_if_fail(val, NULL);
-	return val->kind == DW_AT_KIND_STRING ? val->string.content : NULL;
+static inline const char *rz_bin_dwarf_attr_get_string_const(const RzBinDwarfAttr *attr) {
+	rz_return_val_if_fail(attr, NULL);
+	return attr->kind == DW_AT_KIND_STRING ? attr->string.content : NULL;
+}
+
+static inline char *rz_bin_dwarf_attr_get_string(const RzBinDwarfAttr *attr) {
+	rz_return_val_if_fail(attr, NULL);
+	return rz_str_new(rz_bin_dwarf_attr_get_string_const(attr));
 }
 
 typedef struct {

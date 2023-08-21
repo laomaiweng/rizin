@@ -217,13 +217,13 @@ static void RzBinDwarfCompUnit_apply(RzBinDwarfCompUnit *unit, RzBinDwarfDie *di
 	rz_vector_foreach(&die->attrs, attr) {
 		switch (attr->name) {
 		case DW_AT_name:
-			unit->name = rz_str_new(rz_bin_dwarf_attr_get_string(attr));
+			unit->name = rz_str_new(rz_bin_dwarf_attr_get_string_const(attr));
 			break;
 		case DW_AT_comp_dir:
-			unit->comp_dir = rz_str_new(rz_bin_dwarf_attr_get_string(attr));
+			unit->comp_dir = rz_str_new(rz_bin_dwarf_attr_get_string_const(attr));
 			break;
 		case DW_AT_producer:
-			unit->producer = rz_str_new(rz_bin_dwarf_attr_get_string(attr));
+			unit->producer = rz_str_new(rz_bin_dwarf_attr_get_string_const(attr));
 			break;
 		case DW_AT_language:
 			unit->language = attr->uconstant;

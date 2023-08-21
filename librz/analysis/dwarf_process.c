@@ -561,7 +561,11 @@ static const char *die_name_const(const RzBinDwarfDie *die) {
 	if (!attr) {
 		return NULL;
 	}
-	return rz_bin_dwarf_attr_get_string(attr);
+	return rz_bin_dwarf_attr_get_string_const(attr);
+}
+
+static char *anonymous_name(const char *k, ut64 offset) {
+	return rz_str_newf("anonymous_%s_0x%" PFMT64x, k, offset);
 }
 
 static char *anonymous_name(const char *t, ut64 offset) {
@@ -686,7 +690,7 @@ static RzBaseType *RzBaseType_from_die(Context *ctx, const RzBinDwarfDie *die) {
 			break;
 		}
 		case DW_AT_name:
-			btype->name = rz_str_new(rz_bin_dwarf_attr_get_string(attr));
+			btype->name = rz_str_new(rz_bin_dwarf_attr_get_string_const(attr));
 			break;
 		case DW_AT_byte_size:
 			btype->size = attr->uconstant * CHAR_BIT;
@@ -956,6 +960,9 @@ static RZ_OWN RzType *type_parse_from_offset(
 	set_u_free(visited);
 	return type;
 }
+static inline const char *select_name(const char *demangle_name, const char *link_name, const char *name, DW_LANG lang) {
+	return prefer_linkage_name(lang) ? (demangle_name ? demangle_name : (link_name ? link_name : name)) : name;
+}
 
 static RzType *type_parse_from_abstract_origin(Context *ctx, ut64 offset, char **name_out) {
 	RzBinDwarfDie *die = ht_up_find(ctx->dw->info->die_tbl, offset, NULL);
@@ -970,11 +977,11 @@ static RzType *type_parse_from_abstract_origin(Context *ctx, ut64 offset, char *
 	rz_vector_foreach(&die->attrs, val) {
 		switch (val->name) {
 		case DW_AT_name:
-			name = rz_bin_dwarf_attr_get_string(val);
+			name = rz_bin_dwarf_attr_get_string_const(val);
 			break;
 		case DW_AT_linkage_name:
 		case DW_AT_MIPS_linkage_name:
-			linkname = rz_bin_dwarf_attr_get_string(val);
+			linkname = rz_bin_dwarf_attr_get_string_const(val);
 			break;
 		case DW_AT_type:
 			type = type_parse_from_offset(ctx, val->reference, &size);
@@ -985,11 +992,8 @@ static RzType *type_parse_from_abstract_origin(Context *ctx, ut64 offset, char *
 	if (!type) {
 		return NULL;
 	}
-	if (name_out) {
-		const char *prefer_name = (prefer_linkage_name(ctx->unit->language) && linkname)
-			? linkname
-			: name ? name
-			       : linkname;
+	const char *prefer_name = select_name(NULL, linkname, name, ctx->unit->language);
+	if (prefer_name && name_out) {
 		*name_out = rz_str_new(prefer_name);
 	}
 	return type;
@@ -1189,14 +1193,14 @@ static void function_apply_specification(Context *ctx, const RzBinDwarfDie *die,
 			if (fn->name) {
 				break;
 			}
-			fn->name = rz_str_new(rz_bin_dwarf_attr_get_string(attr));
+			fn->name = rz_str_new(rz_bin_dwarf_attr_get_string_const(attr));
 			break;
 		case DW_AT_linkage_name:
 		case DW_AT_MIPS_linkage_name:
 			if (fn->link_name) {
 				break;
 			}
-			fn->link_name = rz_str_new(rz_bin_dwarf_attr_get_string(attr));
+			fn->link_name = rz_str_new(rz_bin_dwarf_attr_get_string_const(attr));
 			break;
 		case DW_AT_type: {
 			if (fn->ret_type) {
@@ -1335,10 +1339,6 @@ static RzBinDwarfLocation *location_parse(Context *ctx, const RzBinDwarfDie *die
 	return NULL;
 }
 
-static inline const char *var_name(RzAnalysisDwarfVariable *v, DW_LANG lang) {
-	return prefer_linkage_name(lang) ? (v->link_name ? v->link_name : v->name) : v->name;
-}
-
 static bool function_var_parse(Context *ctx, RzAnalysisDwarfFunction *f, const RzBinDwarfDie *fn_die, RzAnalysisDwarfVariable *v, const RzBinDwarfDie *var_die, bool *has_unspecified_parameters) {
 	v->offset = var_die->offset;
 	switch (var_die->tag) {
@@ -1360,11 +1360,11 @@ static bool function_var_parse(Context *ctx, RzAnalysisDwarfFunction *f, const R
 	rz_vector_foreach(&var_die->attrs, attr) {
 		switch (attr->name) {
 		case DW_AT_name:
-			v->name = rz_str_new(rz_bin_dwarf_attr_get_string(attr));
+			v->name = rz_bin_dwarf_attr_get_string(val);
 			break;
 		case DW_AT_linkage_name:
 		case DW_AT_MIPS_linkage_name:
-			v->link_name = rz_str_new(rz_bin_dwarf_attr_get_string(attr));
+			v->link_name = rz_bin_dwarf_attr_get_string(val);
 			break;
 		case DW_AT_type: {
 			RzType *type = type_parse_from_offset(ctx, attr->reference, NULL);
@@ -1398,7 +1398,10 @@ static bool function_var_parse(Context *ctx, RzAnalysisDwarfFunction *f, const R
 	} else if (!v->location) {
 		v->location = RzBinDwarfLocation_with_kind(RzBinDwarfLocationKind_DECODE_ERROR);
 	}
-	v->prefer_name = var_name(v, ctx->unit->language);
+	v->prefer_name = select_name(NULL, v->link_name, v->name, ctx->unit->language);
+	if (!v->prefer_name) {
+		v->prefer_name = v->name = anonymous_name("var", var_die->offset);
+	}
 	return true;
 }
 
@@ -1446,10 +1449,6 @@ static bool function_children_parse(Context *ctx, const RzBinDwarfDie *die, RzCa
 	return true;
 }
 
-static inline const char *function_name(RzAnalysisDwarfFunction *f, DW_LANG lang) {
-	return prefer_linkage_name(lang) ? (f->demangle_name ? (const char *)(f->demangle_name) : (f->link_name ? f->link_name : f->name)) : f->name;
-}
-
 static void function_free(RzAnalysisDwarfFunction *f) {
 	if (!f) {
 		return;
@@ -1486,11 +1485,11 @@ static bool function_parse(
 	rz_vector_foreach(&die->attrs, val) {
 		switch (val->name) {
 		case DW_AT_name:
-			fcn->name = rz_str_new(rz_bin_dwarf_attr_get_string(val));
+			fcn->name = rz_str_new(rz_bin_dwarf_attr_get_string_const(val));
 			break;
 		case DW_AT_linkage_name:
 		case DW_AT_MIPS_linkage_name:
-			fcn->link_name = rz_str_new(rz_bin_dwarf_attr_get_string(val));
+			fcn->link_name = rz_str_new(rz_bin_dwarf_attr_get_string_const(val));
 			break;
 		case DW_AT_low_pc:
 			fcn->low_pc = val->kind == DW_AT_KIND_ADDRESS ? val->address : fcn->low_pc;
@@ -1544,7 +1543,7 @@ static bool function_parse(
 	if (fcn->link_name) {
 		fcn->demangle_name = ctx->analysis->binb.demangle(ctx->analysis->binb.bin, rz_bin_dwarf_lang_for_demangle(ctx->unit->language), fcn->link_name);
 	}
-	fcn->prefer_name = function_name(fcn, ctx->unit->language);
+	fcn->prefer_name = select_name(fcn->demangle_name, fcn->link_name, fcn->name, ctx->unit->language);
 
 	RzCallable *callable = rz_type_callable_new(fcn->prefer_name);
 	callable->ret = fcn->ret_type ? rz_type_clone(fcn->ret_type) : NULL;
@@ -1848,7 +1847,7 @@ static bool RzAnalysisDwarfVariable_as_RzAnalysisVar(RzAnalysis *a, RzAnalysisFu
 	if (!loc) {
 		return false;
 	}
-	var->type = DW_var->type ? DW_var->type : rz_type_new_default(a->typedb);
+	var->type = DW_var->type ? rz_type_clone(DW_var->type) : rz_type_new_default(a->typedb);
 	var->name = strdup(DW_var->prefer_name ? DW_var->prefer_name : "");
 	var->kind = DW_var->kind;
 	var->fcn = f;

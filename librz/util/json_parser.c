@@ -569,7 +569,14 @@ RZ_API RZ_OWN char *rz_json_as_string(const RzJson *json, bool with_key) {
 	return pj_drain(pj);
 }
 
-RZ_API bool rz_json_eq(const RzJson *a, const RzJson *b) {
+/**
+ * \brief Check if two RzJson objects are equal
+ * \param a the first RzJson object
+ * \param b the second RzJson object
+ * \return true if the objects are equal, false otherwise
+ */
+RZ_API bool rz_json_eq(RZ_NONNULL RZ_BORROW const RzJson *a, RZ_NONNULL RZ_BORROW const RzJson *b) {
+	rz_return_val_if_fail(a && b, false);
 	if (a->type != b->type) {
 		return false;
 	}
@@ -599,7 +606,13 @@ RZ_API bool rz_json_eq(const RzJson *a, const RzJson *b) {
 	return false;
 }
 
-RZ_API bool rz_json_string_eq(const char *sa, const char *sb) {
+/**
+ * \brief Check if two RzJson objects are equal in JSON value
+ * \param a the first JSON string
+ * \param b the second JSON string
+ * \return true if they are equal in JSON value, false if they are NULL or not valid JSON or not equal
+ */
+RZ_API bool rz_json_string_eq(RZ_NONNULL RZ_BORROW const char *sa, RZ_NONNULL RZ_BORROW const char *sb) {
 	rz_return_val_if_fail(sa && sb, false);
 	char *sa_dup = strdup(sa);
 	char *sb_dup = strdup(sb);

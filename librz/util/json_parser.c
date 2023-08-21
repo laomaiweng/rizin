@@ -600,17 +600,23 @@ RZ_API bool rz_json_eq(const RzJson *a, const RzJson *b) {
 }
 
 RZ_API bool rz_json_string_eq(const char *sa, const char *sb) {
-	rz_return_val_if_fail(sa && sb, 0);
-	RzJson *a = rz_json_parse((char *)sa);
+	rz_return_val_if_fail(sa && sb, false);
+	char *sa_dup = strdup(sa);
+	char *sb_dup = strdup(sb);
+	RzJson *a = rz_json_parse(sa_dup);
+	RzJson *b = NULL;
+	bool ret = false;
 	if (!a) {
-		return false;
+		goto beach;
 	}
-	RzJson *b = rz_json_parse((char *)sb);
+	b = rz_json_parse(sb_dup);
 	if (!b) {
-		rz_json_free(a);
-		return false;
+		goto beach;
 	}
-	bool ret = rz_json_eq(a, b);
+	ret = rz_json_eq(a, b);
+beach:
+	free(sa_dup);
+	free(sb_dup);
 	rz_json_free(a);
 	rz_json_free(b);
 	return ret;

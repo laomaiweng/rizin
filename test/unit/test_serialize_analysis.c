@@ -436,6 +436,28 @@ Sdb *vars_ref_db() {
 	return db;
 }
 
+static RzAnalysisVarStorage *composite_stor() {
+	RzAnalysisVarStorage *stor = RZ_NEW0(RzAnalysisVarStorage);
+	rz_analysis_var_storage_init_composite(stor);
+	RzAnalysisVarStoragePiece p1 = {
+		.offset_in_bits = 0,
+		.size_in_bits = 32,
+		.storage = RZ_NEW0(RzAnalysisVarStorage)
+	};
+	p1.storage->type = RZ_ANALYSIS_VAR_STORAGE_REG;
+	p1.storage->reg = strdup("rax");
+	RzAnalysisVarStoragePiece p2 = {
+		.offset_in_bits = 32,
+		.size_in_bits = 32,
+		.storage = RZ_NEW0(RzAnalysisVarStorage)
+	};
+	p2.storage->type = RZ_ANALYSIS_VAR_STORAGE_REG;
+	p2.storage->reg = strdup("rbx");
+	rz_vector_push(stor->composite, &p1);
+	rz_vector_push(stor->composite, &p2);
+	return stor;
+}
+
 bool test_analysis_var_save() {
 	RzAnalysis *analysis = rz_analysis_new();
 	rz_analysis_use(analysis, "x86");
@@ -488,24 +510,8 @@ bool test_analysis_var_save() {
 	v = rz_analysis_function_set_var(f, &stor, t_uint64_t, 0, "arg_8h");
 	v->comment = strdup("I have no idea what this var does");
 
-	rz_analysis_var_storage_init_composite(&stor);
-	RzAnalysisVarStoragePiece p1 = {
-		.offset_in_bits = 0,
-		.size_in_bits = 32,
-		.storage = RZ_NEW0(RzAnalysisVarStorage)
-	};
-	p1.storage->type = RZ_ANALYSIS_VAR_STORAGE_REG;
-	p1.storage->reg = strdup("rax");
-	RzAnalysisVarStoragePiece p2 = {
-		.offset_in_bits = 32,
-		.size_in_bits = 32,
-		.storage = RZ_NEW0(RzAnalysisVarStorage)
-	};
-	p2.storage->type = RZ_ANALYSIS_VAR_STORAGE_REG;
-	p2.storage->reg = strdup("rbx");
-	rz_vector_push(stor.composite, &p1);
-	rz_vector_push(stor.composite, &p2);
-	rz_analysis_function_set_var(f, &stor, t_struct_something, 0, "var_18h");
+	RzAnalysisVarStorage *compos = composite_stor();
+	rz_analysis_function_set_var(f, compos, t_struct_something, 0, "arg_18h");
 
 	Sdb *db = sdb_new0();
 	rz_serialize_analysis_functions_save(db, analysis);
@@ -514,6 +520,8 @@ bool test_analysis_var_save() {
 	assert_sdb_json_eq(db, expected, "functions save");
 	sdb_free(db);
 	sdb_free(expected);
+
+	rz_analysis_var_storage_free(compos);
 	rz_analysis_free(analysis);
 	mu_end;
 }
@@ -532,7 +540,7 @@ bool test_analysis_var_load() {
 	RzAnalysisFunction *f = rz_analysis_get_function_at(analysis, 1337);
 	mu_assert_notnull(f, "function");
 
-	mu_assert_eq(rz_pvector_len(&f->vars), 4, "vars count");
+	mu_assert_eq(rz_pvector_len(&f->vars), 5, "vars count");
 
 	RzType *t_int64_t = rz_type_identifier_of_base_type_str(analysis->typedb, "int64_t");
 	mu_assert_notnull(t_int64_t, "has int64_t type");
@@ -610,6 +618,13 @@ bool test_analysis_var_load() {
 	mu_assert_true(rz_type_atomic_str_eq(analysis->typedb, v->type, "uint64_t"), "var type");
 	mu_assert_eq(v->accesses.len, 0, "accesses count");
 	mu_assert_streq(v->comment, "I have no idea what this var does", "var comment");
+
+	RzAnalysisVarStorage *compos = composite_stor();
+	v = rz_analysis_function_get_var_at(f, compos);
+	mu_assert_notnull(v, "var");
+	mu_assert_eq(v->storage.type, RZ_ANALYSIS_VAR_STORAGE_COMPOSITE, "var storage");
+	mu_assert_streq(v->name, "arg_18h", "var name");
+	rz_analysis_var_storage_free(compos);
 
 	sdb_free(db);
 	rz_analysis_free(analysis);

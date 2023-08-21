@@ -31,7 +31,26 @@ RZ_API int rz_analysis_var_storage_cmp(
 		return strcmp(a->reg, b->reg);
 	case RZ_ANALYSIS_VAR_STORAGE_STACK:
 		return a->stack_off - b->stack_off;
-	case RZ_ANALYSIS_VAR_STORAGE_COMPOSITE:
+	case RZ_ANALYSIS_VAR_STORAGE_COMPOSITE: {
+		RzAnalysisVarStoragePiece *ap = NULL;
+		ut32 i = 0;
+		rz_vector_enumerate(a->composite, ap, i) {
+			RzAnalysisVarStoragePiece *bp = rz_vector_index_ptr(b->composite, i);
+			int xcmp = ap->offset_in_bits - bp->offset_in_bits;
+			if (xcmp != 0) {
+				return xcmp;
+			}
+			xcmp = ap->size_in_bits - bp->size_in_bits;
+			if (xcmp != 0) {
+				return xcmp;
+			}
+			xcmp = rz_analysis_var_storage_cmp(ap->storage, bp->storage);
+			if (xcmp != 0) {
+				return xcmp;
+			}
+		}
+		return 0;
+	}
 	case RZ_ANALYSIS_VAR_STORAGE_EVAL_PENDING:
 		return -1;
 	default:
@@ -1023,7 +1042,6 @@ RZ_API bool rz_analysis_var_is_arg(RZ_NONNULL RzAnalysisVar *var) {
 	case RZ_ANALYSIS_VAR_STORAGE_STACK:
 		return stack_offset_is_arg(var->fcn, var->storage.stack_off);
 	default:
-		rz_warn_if_reached();
 		return false;
 	}
 }

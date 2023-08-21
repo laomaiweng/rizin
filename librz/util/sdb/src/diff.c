@@ -159,7 +159,7 @@ static void sdb_diff_ctx(SdbDiffCtx *ctx) {
 }
 
 RZ_API bool sdb_diff(Sdb *a, Sdb *b, SdbDiffCallback cb, void *cb_user) {
-	sdb_diff_eq(a, b, NULL, cb, cb_user);
+	return sdb_diff_eq(a, b, NULL, cb, cb_user);
 }
 
 RZ_API bool sdb_diff_eq(Sdb *a, Sdb *b, VALUE_EQ_F eq, SdbDiffCallback cb, void *cb_user) {

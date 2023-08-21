@@ -760,6 +760,7 @@ static bool piece_load(
 			if (child->type != RZ_JSON_OBJECT) {
 				return false;
 			}
+			p->storage = RZ_NEW0(RzAnalysisVarStorage);
 			if (!rz_serialize_analysis_var_storage_load(ctx, child, p->storage)) {
 				return false;
 			}

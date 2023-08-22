@@ -1766,7 +1766,9 @@ RZ_API void rz_analysis_var_storage_dump_pj(
 RZ_API RZ_OWN char *rz_analysis_var_storage_to_string(
 	RZ_NONNULL RZ_BORROW RzAnalysis *a,
 	RZ_NONNULL RZ_BORROW const RzAnalysisVarStorage *storage);
-
+RZ_API void rz_analysis_var_storage_poolify(
+	RZ_NONNULL RZ_BORROW RzAnalysis *analysis,
+	RZ_NONNULL RZ_BORROW RZ_OUT RzAnalysisVarStorage *stor);
 RZ_API void rz_analysis_var_storage_piece_fini(RzAnalysisVarStoragePiece *p);
 RZ_API void rz_analysis_var_storage_fini(RzAnalysisVarStorage *sto);
 RZ_API void rz_analysis_var_storage_free(RzAnalysisVarStorage *sto);

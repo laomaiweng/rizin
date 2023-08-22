@@ -216,9 +216,20 @@ RZ_API void rz_analysis_var_storage_dump_pj(
 /**
  * Ensure that the register name in \p stor comes from the const pool
  */
-static void storage_poolify(RzAnalysis *analysis, RzAnalysisVarStorage *stor) {
+RZ_API void rz_analysis_var_storage_poolify(
+	RZ_NONNULL RZ_BORROW RzAnalysis *analysis,
+	RZ_NONNULL RZ_BORROW RZ_OUT RzAnalysisVarStorage *stor) {
+	rz_return_if_fail(analysis && stor);
 	if (stor->type == RZ_ANALYSIS_VAR_STORAGE_REG) {
 		stor->reg = rz_str_constpool_get(&analysis->constpool, stor->reg);
+	} else if (stor->type == RZ_ANALYSIS_VAR_STORAGE_COMPOSITE) {
+		if (!stor->composite) {
+			return;
+		}
+		RzAnalysisVarStoragePiece *piece = NULL;
+		rz_vector_foreach(stor->composite, piece) {
+			rz_analysis_var_storage_poolify(analysis, piece->storage);
+		}
 	}
 }
 
@@ -388,7 +399,7 @@ RZ_API RZ_BORROW RzAnalysisVar *rz_analysis_function_set_var(
 
 	var->name = strdup(name);
 	var->storage = *stor;
-	storage_poolify(fcn->analysis, &var->storage);
+	rz_analysis_var_storage_poolify(fcn->analysis, &var->storage);
 	if (type) {
 		if (var->type != type) {
 			rz_type_free(var->type);
@@ -435,7 +446,7 @@ RZ_IPI RZ_BORROW RzAnalysisVar *rz_analysis_function_add_var(
 	}
 
 	rz_pvector_push(&fcn->vars, var);
-	storage_poolify(fcn->analysis, &var->storage);
+	rz_analysis_var_storage_poolify(fcn->analysis, &var->storage);
 	rz_analysis_var_resolve_overlaps(var);
 	return var;
 }

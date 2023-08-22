@@ -436,8 +436,7 @@ Sdb *vars_ref_db() {
 	return db;
 }
 
-static RzAnalysisVarStorage *composite_stor() {
-	RzAnalysisVarStorage *stor = RZ_NEW0(RzAnalysisVarStorage);
+static RzAnalysisVarStorage *composite_stor(RzAnalysisVarStorage *stor) {
 	rz_analysis_var_storage_init_composite(stor);
 	RzAnalysisVarStoragePiece p1 = {
 		.offset_in_bits = 0,
@@ -510,8 +509,9 @@ bool test_analysis_var_save() {
 	v = rz_analysis_function_set_var(f, &stor, t_uint64_t, 0, "arg_8h");
 	v->comment = strdup("I have no idea what this var does");
 
-	RzAnalysisVarStorage *compos = composite_stor();
-	rz_analysis_function_set_var(f, compos, t_struct_something, 0, "arg_18h");
+	RzAnalysisVarStorage compos = { 0 };
+	composite_stor(&compos);
+	rz_analysis_function_set_var(f, &compos, t_struct_something, 0, "arg_18h");
 
 	Sdb *db = sdb_new0();
 	rz_serialize_analysis_functions_save(db, analysis);
@@ -521,7 +521,6 @@ bool test_analysis_var_save() {
 	sdb_free(db);
 	sdb_free(expected);
 
-	rz_analysis_var_storage_free(compos);
 	rz_analysis_free(analysis);
 	mu_end;
 }
@@ -619,12 +618,13 @@ bool test_analysis_var_load() {
 	mu_assert_eq(v->accesses.len, 0, "accesses count");
 	mu_assert_streq(v->comment, "I have no idea what this var does", "var comment");
 
-	RzAnalysisVarStorage *compos = composite_stor();
-	v = rz_analysis_function_get_var_at(f, compos);
+	RzAnalysisVarStorage compos = {0};
+	composite_stor(&compos);
+	v = rz_analysis_function_get_var_at(f, &compos);
 	mu_assert_notnull(v, "var");
 	mu_assert_eq(v->storage.type, RZ_ANALYSIS_VAR_STORAGE_COMPOSITE, "var storage");
 	mu_assert_streq(v->name, "arg_18h", "var name");
-	rz_analysis_var_storage_free(compos);
+	rz_analysis_var_storage_fini(&compos);
 
 	sdb_free(db);
 	rz_analysis_free(analysis);

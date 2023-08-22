@@ -831,6 +831,7 @@ RZ_API bool rz_serialize_analysis_var_storage_load(
 			RZ_LOG_WARN("Unimplemented field \"%s\" in variable storage\n", child->key);
 			break;
 	});
+	rz_analysis_var_storage_poolify(ctx->analysis, storage);
 	return json->type == RZ_JSON_OBJECT && storage->type <= RZ_ANALYSIS_VAR_STORAGE_EVAL_PENDING;
 }
 

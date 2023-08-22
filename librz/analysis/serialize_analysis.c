@@ -1305,7 +1305,7 @@ beach:
 	return ret;
 }
 
-bool rz_serialize_analysis_functions_load(RZ_NONNULL Sdb *db, RZ_NONNULL RzAnalysis *analysis, RZ_NULLABLE RzSerializeResultInfo *res) {
+RZ_API bool rz_serialize_analysis_functions_load(RZ_NONNULL Sdb *db, RZ_NONNULL RzAnalysis *analysis, RZ_NULLABLE RzSerializeResultInfo *res) {
 	RzSerializeAnalysisFunctionLoadCtx ctx = {
 		.analysis = analysis,
 		.parser = rz_key_parser_new(),

@@ -107,7 +107,7 @@ static void strbuf_append_sign_hex(RzStrBuf *sb, st64 x) {
 
 static void composite_dump(RZ_NONNULL RZ_BORROW RzAnalysis *a,
 	RZ_NONNULL RZ_BORROW RZ_OUT RzStrBuf *sb,
-	RZ_NONNULL RZ_BORROW const RzVector /*<RzAnalysisVarStoragePiece *>*/ *composite) {
+	RZ_NONNULL RZ_BORROW const RzVector /*<RzAnalysisVarStoragePiece>*/ *composite) {
 	rz_strbuf_append(sb, "composite: [");
 	ut32 i;
 	ut32 end = rz_vector_len(composite) - 1;
@@ -164,7 +164,7 @@ RZ_API RZ_OWN char *rz_analysis_var_storage_to_string(
 static void composite_dump_pj(
 	RZ_NONNULL RZ_BORROW RZ_OUT PJ *pj,
 	RZ_NONNULL RZ_BORROW const RzAnalysisVar *var,
-	RZ_NONNULL RZ_BORROW const RzVector /*<RzAnalysisVarStoragePiece *>*/ *composite) {
+	RZ_NONNULL RZ_BORROW const RzVector /*<RzAnalysisVarStoragePiece>*/ *composite) {
 	pj_a(pj);
 	RzAnalysisVarStoragePiece *piece = NULL;
 	rz_vector_foreach(composite, piece) {

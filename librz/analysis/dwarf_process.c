@@ -1782,7 +1782,7 @@ static bool RzBinDwarfLocation_as_RzAnalysisVarStorage(
 	}
 	case RzBinDwarfLocationKind_ADDRESS: {
 		rz_analysis_var_global_create(a, DW_var->prefer_name,
-				rz_type_clone(DW_var->type), loc->address);
+			rz_type_clone(DW_var->type), loc->address);
 		rz_analysis_var_fini(var);
 		return false;
 	}

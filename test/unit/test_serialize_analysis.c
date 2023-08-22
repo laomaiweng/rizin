@@ -618,7 +618,7 @@ bool test_analysis_var_load() {
 	mu_assert_eq(v->accesses.len, 0, "accesses count");
 	mu_assert_streq(v->comment, "I have no idea what this var does", "var comment");
 
-	RzAnalysisVarStorage compos = {0};
+	RzAnalysisVarStorage compos = { 0 };
 	composite_stor(&compos);
 	v = rz_analysis_function_get_var_at(f, &compos);
 	mu_assert_notnull(v, "var");

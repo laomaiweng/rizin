@@ -2098,6 +2098,16 @@ RZ_API bool rz_serialize_analysis_cc_load(RZ_NONNULL Sdb *db, RZ_NONNULL RzAnaly
 	return true;
 }
 
+RZ_API bool rz_serialize_analysis_debug_info_save(RZ_NONNULL Sdb *db, RZ_NONNULL RzAnalysis *analysis) {
+	if (analysis->debug_info == NULL) {
+		return false;
+	}
+	if (analysis->debug_info->dw) {
+		rz_bin_dwarf_serialize_sdb(analysis->debug_info->dw, sdb_ns(db, "dwarf", true));
+	}
+	return true;
+}
+
 RZ_API void rz_serialize_analysis_save(RZ_NONNULL Sdb *db, RZ_NONNULL RzAnalysis *analysis) {
 	rz_serialize_analysis_xrefs_save(sdb_ns(db, "xrefs", true), analysis);
 	rz_serialize_analysis_blocks_save(sdb_ns(db, "blocks", true), analysis);
@@ -2111,6 +2121,7 @@ RZ_API void rz_serialize_analysis_save(RZ_NONNULL Sdb *db, RZ_NONNULL RzAnalysis
 	rz_serialize_analysis_imports_save(sdb_ns(db, "imports", true), analysis);
 	rz_serialize_analysis_cc_save(sdb_ns(db, "cc", true), analysis);
 	rz_serialize_analysis_global_var_save(sdb_ns(db, "vars", true), analysis);
+	rz_serialize_analysis_debug_info_save(sdb_ns(db, "debuginfo", true), analysis);
 }
 
 RZ_API bool rz_serialize_analysis_load(RZ_NONNULL Sdb *db, RZ_NONNULL RzAnalysis *analysis, RZ_NULLABLE RzSerializeResultInfo *res) {

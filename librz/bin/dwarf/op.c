@@ -609,7 +609,7 @@ static RzBinDwarfValueType ValueType_from_die(RzBinDwarfEvaluation *eval, const 
 	if (!die) {
 		return RzBinDwarfValueType_GENERIC;
 	}
-	assert(die->tag == DW_TAG_base_type);
+	rz_return_val_if_fail(die->tag == DW_TAG_base_type, RzBinDwarfValueType_GENERIC);
 	RzBinDwarfAttr *attr;
 	RzBinDwarfValueType value_type = RzBinDwarfValueType_GENERIC;
 	ut8 byte_size = 0;

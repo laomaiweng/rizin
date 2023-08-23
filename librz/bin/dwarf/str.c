@@ -4,6 +4,8 @@
 #include <rz_bin_dwarf.h>
 #include "dwarf_private.h"
 
+Ht_FREE_IMPL(UP, string, free);
+
 RZ_IPI void RzBinDwarfDebugStr_free(RzBinDwarfDebugStr *debug_str) {
 	if (!debug_str) {
 		return;

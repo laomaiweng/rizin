@@ -47,7 +47,7 @@ static bool test_parse_dwarf_types(void) {
 	};
 	RzBinDWARF *dw = rz_bin_dwarf_from_file(bf, &dw_opt);
 
-	mu_assert_notnull(dw->abbrevs, "Couldn't parse Abbreviations");
+	mu_assert_notnull(dw->abbrev, "Couldn't parse Abbreviations");
 	mu_assert_notnull(dw->info, "Couldn't parse debug_info section");
 	mu_assert_notnull(dw->loc, "Couldn't parse loc section");
 
@@ -161,7 +161,7 @@ static bool test_dwarf_function_parsing_cpp(void) {
 	};
 
 	RzBinDWARF *dw = rz_bin_dwarf_from_file(bf, &dw_opt);
-	mu_assert_notnull(dw->abbrevs, "Couldn't parse Abbreviations");
+	mu_assert_notnull(dw->abbrev, "Couldn't parse Abbreviations");
 	mu_assert_notnull(dw->info, "Couldn't parse debug_info section");
 
 	rz_analysis_dwarf_process_info(analysis, dw);
@@ -207,7 +207,7 @@ static bool test_dwarf_function_parsing_go(void) {
 		.flags = RZ_BIN_DWARF_ABBREVS | RZ_BIN_DWARF_INFO | RZ_BIN_DWARF_LOC,
 	};
 	RzBinDWARF *dw = rz_bin_dwarf_from_file(bf, &dw_opt);
-	mu_assert_notnull(dw->abbrevs, "Couldn't parse Abbreviations");
+	mu_assert_notnull(dw->abbrev, "Couldn't parse Abbreviations");
 	mu_assert_notnull(dw->info, "Couldn't parse debug_info section");
 	mu_assert_notnull(dw->loc, "Couldn't parse loc section");
 
@@ -257,7 +257,7 @@ static bool test_dwarf_function_parsing_rust(void) {
 	};
 	RzBinDWARF *dw = rz_bin_dwarf_from_file(bf, &dw_opt);
 
-	mu_assert_notnull(dw->abbrevs, "Couldn't parse Abbreviations");
+	mu_assert_notnull(dw->abbrev, "Couldn't parse Abbreviations");
 	mu_assert_notnull(dw->info, "Couldn't parse debug_info section");
 	mu_assert_notnull(dw->loc, "Couldn't parse loc section");
 

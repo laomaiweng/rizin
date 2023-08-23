@@ -13,15 +13,16 @@ typedef struct {
 	RzBinDwarfDebugStr *debug_str;
 } DebugInfo_Context;
 
-static void HtUP_value_free(HtUPKv *kv) {
-	free(kv->value);
-}
-
 static void RzBinDwarfDie_fini(RzBinDwarfDie *die) {
 	if (!die) {
 		return;
 	}
 	rz_vector_fini(&die->attrs);
+}
+
+static inline ut64 attr_get_uconstant_or_reference(const RzBinDwarfAttr *attr) {
+	rz_warn_if_fail(attr->kind == DW_AT_KIND_UCONSTANT || attr->kind == DW_AT_KIND_REFERENCE);
+	return attr->kind == DW_AT_KIND_UCONSTANT ? attr->uconstant : attr->reference;
 }
 
 static bool RzBinDwarfDie_attrs_parse(
@@ -64,44 +65,14 @@ static bool RzBinDwarfDie_attrs_parse(
 #endif
 
 		switch (attr.name) {
-		case DW_AT_comp_dir:
-			if (attr.kind == DW_AT_KIND_STRING) {
-				comp_dir = attr.string.content;
-			}
-			break;
-		case DW_AT_stmt_list:
-			if (attr.kind == DW_AT_KIND_UCONSTANT) {
-				line_info_offset = attr.uconstant;
-			} else if (attr.kind == DW_AT_KIND_REFERENCE) {
-				line_info_offset = attr.reference;
-			}
-			break;
 		case DW_AT_sibling:
-			if (attr.kind == DW_AT_KIND_UCONSTANT) {
-				die->sibling = attr.uconstant;
-			} else if (attr.kind == DW_AT_KIND_REFERENCE) {
-				die->sibling = attr.reference;
-			} else {
-				rz_warn_if_reached();
-			}
+			die->sibling = attr_get_uconstant_or_reference(&attr);
 			break;
 		default:
 			break;
 		}
 
 		rz_vector_push(&die->attrs, &attr);
-	}
-
-	// If this is a compilation unit dir attribute, we want to cache it so the line info parsing
-	// which will need this info can quickly look it up.
-	if (comp_dir && line_info_offset != UT64_MAX) {
-		char *name = rz_str_new(comp_dir);
-		if (!name) {
-			return true;
-		}
-		if (!ht_up_insert(ctx->debug_info->line_info_offset_comp_dir, line_info_offset, name)) {
-			free(name);
-		}
 	}
 	return true;
 }
@@ -124,9 +95,6 @@ static void RzBinDwarfCompUnit_fini(RzBinDwarfCompUnit *unit, void *user) {
 		return;
 	}
 	rz_vector_fini(&unit->dies);
-	free(unit->comp_dir);
-	free(unit->producer);
-	free(unit->name);
 }
 
 static inline ut64 RzBinDwarfCompUnit_next(RzBinDwarfCompUnit *unit) {
@@ -234,13 +202,13 @@ static void RzBinDwarfCompUnit_apply(RzBinDwarfCompUnit *unit, RzBinDwarfDie *di
 	rz_vector_foreach(&die->attrs, attr) {
 		switch (attr->name) {
 		case DW_AT_name:
-			unit->name = rz_str_new(rz_bin_dwarf_attr_get_string_const(attr));
+			unit->name = rz_bin_dwarf_attr_get_string_const(attr);
 			break;
 		case DW_AT_comp_dir:
-			unit->comp_dir = rz_str_new(rz_bin_dwarf_attr_get_string_const(attr));
+			unit->comp_dir = rz_bin_dwarf_attr_get_string_const(attr);
 			break;
 		case DW_AT_producer:
-			unit->producer = rz_str_new(rz_bin_dwarf_attr_get_string_const(attr));
+			unit->producer = rz_bin_dwarf_attr_get_string_const(attr);
 			break;
 		case DW_AT_language:
 			unit->language = attr->uconstant;
@@ -252,7 +220,7 @@ static void RzBinDwarfCompUnit_apply(RzBinDwarfCompUnit *unit, RzBinDwarfDie *di
 			unit->high_pc = attr->address;
 			break;
 		case DW_AT_stmt_list:
-			unit->stmt_list = attr->uconstant;
+			unit->stmt_list = attr_get_uconstant_or_reference(attr);
 			break;
 		case DW_AT_str_offsets_base:
 			unit->str_offsets_base = attr->uconstant;
@@ -314,6 +282,10 @@ static bool RzBinDwarfCompUnit_parse(DebugInfo_Context *ctx) {
 			RzBinDwarfDie *die = rz_vector_head(&unit.dies);
 			if (die->tag == DW_TAG_compile_unit) {
 				RzBinDwarfCompUnit_apply(&unit, die);
+				if (unit.stmt_list >= 0 && unit.stmt_list < UT64_MAX && unit.comp_dir) {
+					ht_up_insert(ctx->debug_info->line_info_offset_comp_dir,
+						unit.stmt_list, (void *)unit.comp_dir);
+				}
 			}
 			rz_vector_shrink(&unit.dies);
 		}
@@ -339,7 +311,7 @@ RZ_API RZ_BORROW RzBinDwarfAttr *rz_bin_dwarf_die_get_attr(RZ_BORROW RZ_NONNULL 
 
 static bool RzBinDwarfDebugInfo_init(RzBinDwarfDebugInfo *info) {
 	rz_vector_init(&info->units, sizeof(RzBinDwarfCompUnit), (RzVectorFree)RzBinDwarfCompUnit_fini, NULL);
-	info->line_info_offset_comp_dir = ht_up_new(NULL, HtUP_value_free, NULL);
+	info->line_info_offset_comp_dir = ht_up_new(NULL, NULL, NULL);
 	if (!info->line_info_offset_comp_dir) {
 		goto beach;
 	}

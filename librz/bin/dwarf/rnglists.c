@@ -247,8 +247,8 @@ static bool RzBinDwarfRngListTable_parse(RzBinDwarfRngListTable *self, RzBuffer 
 RZ_API RZ_OWN RzBinDwarfRngListTable *rz_bin_dwarf_rnglists_new_from_buf(
 	RZ_OWN RZ_NONNULL RzBuffer *debug_ranges,
 	RZ_OWN RZ_NONNULL RzBuffer *debug_rnglists,
-	RZ_BORROW RZ_NONNULL RzBinDwarfDebugAddr *debug_addr) {
-	rz_return_val_if_fail((debug_ranges || debug_rnglists) && debug_addr, NULL);
+	RZ_BORROW RZ_NULLABLE RzBinDwarfDebugAddr *debug_addr) {
+	rz_return_val_if_fail(debug_ranges || debug_rnglists, NULL);
 	RzBinDwarfRngListTable *self = RZ_NEW0(RzBinDwarfRngListTable);
 	RET_NULL_IF_FAIL(self);
 	self->debug_addr = debug_addr;
@@ -266,8 +266,8 @@ RZ_API RZ_OWN RzBinDwarfRngListTable *rz_bin_dwarf_rnglists_new_from_buf(
  */
 RZ_API RZ_OWN RzBinDwarfRngListTable *rz_bin_dwarf_rnglists_new_from_file(
 	RZ_BORROW RZ_NONNULL RzBinFile *bf,
-	RZ_BORROW RZ_NONNULL RzBinDwarfDebugAddr *debug_addr) {
-	RET_NULL_IF_FAIL(bf && debug_addr);
+	RZ_BORROW RZ_NULLABLE RzBinDwarfDebugAddr *debug_addr) {
+	RET_NULL_IF_FAIL(bf);
 	RzBuffer *debug_ranges = get_section_buf(bf, ".debug_ranges");
 	RzBuffer *debug_rnglists = get_section_buf(bf, ".debug_rnglists");
 	if (!(debug_ranges || debug_rnglists)) {

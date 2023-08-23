@@ -219,7 +219,8 @@ RZ_IPI char *RzBinDwarfLineHeader_full_file_path(
 	 * or backslashes anyway, we will simply use slashes always here.
 	 */
 
-	const char *comp_dir = ctx->debug_info ? ht_up_find(ctx->debug_info->line_info_offset_comp_dir, ctx->hdr->offset, NULL) : NULL;
+	const char *comp_dir = ctx->debug_info ? ht_up_find(ctx->debug_info->line_info_offset_comp_dir, ctx->hdr->offset, NULL)
+					       : NULL;
 	const char *include_dir = NULL;
 	char *own_str = NULL;
 	if (file->directory_index > 0 && file->directory_index - 1 < rz_pvector_len(&ctx->hdr->directories)) {

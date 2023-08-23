@@ -92,5 +92,3 @@
 	static void Ht##V##_##T##_free(Ht##V##Kv *kv) { \
 		f(kv->value); \
 	}
-
-Ht_FREE_IMPL(UP, string, free);

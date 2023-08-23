@@ -1117,9 +1117,9 @@ typedef struct rz_bin_dwarf_comp_unit_t {
 	ut64 offset;
 	RzBinDwarfCompUnitHdr hdr;
 	RzVector /*<RzBinDwarfDie>*/ dies;
-	char *name;
-	char *comp_dir;
-	char *producer;
+	const char *name;
+	const char *comp_dir;
+	const char *producer;
 	DW_LANG language;
 	ut64 low_pc;
 	ut64 high_pc;
@@ -1487,22 +1487,22 @@ typedef struct {
 typedef struct rz_core_bin_dwarf_t {
 	RzBinDwarfEncoding encoding;
 	RzBinDwarfARanges *aranges;
-	RzBinDwarfLineInfo *lines;
+	RzBinDwarfLineInfo *line;
 	RzBinDwarfLocListTable *loc;
 	RzBinDwarfRngListTable *rng;
 	RzBinDwarfDebugInfo *info;
-	RzBinDwarfDebugAbbrevs *abbrevs;
+	RzBinDwarfDebugAbbrevs *abbrev;
 	RzBinDwarfDebugAddr *addr;
 	RzBinDwarfDebugStr *str;
 } RzBinDWARF;
 
 typedef enum {
 	RZ_BIN_DWARF_ABBREVS = 1 << 1,
-	RZ_BIN_DWARF_INFO = 1 << 2 | RZ_BIN_DWARF_ABBREVS,
-	RZ_BIN_DWARF_LOC = 1 << 3 | RZ_BIN_DWARF_INFO,
-	RZ_BIN_DWARF_LINES = 1 << 4 | RZ_BIN_DWARF_INFO,
+	RZ_BIN_DWARF_INFO = 1 << 2,
+	RZ_BIN_DWARF_LOC = 1 << 3,
+	RZ_BIN_DWARF_LINES = 1 << 4,
 	RZ_BIN_DWARF_ARANGES = 1 << 5,
-	RZ_BIN_DWARF_RNG = 1 << 6 | RZ_BIN_DWARF_INFO,
+	RZ_BIN_DWARF_RNG = 1 << 6,
 	RZ_BIN_DWARF_ALL = RZ_BIN_DWARF_ABBREVS | RZ_BIN_DWARF_INFO | RZ_BIN_DWARF_LOC | RZ_BIN_DWARF_LINES | RZ_BIN_DWARF_ARANGES | RZ_BIN_DWARF_RNG,
 } RzBinDWARFFlags;
 
@@ -1834,10 +1834,10 @@ RZ_API RZ_OWN RzBinDwarfLocListTable *rz_bin_dwarf_loclists_new_from_file(
 RZ_API RZ_OWN RzBinDwarfRngListTable *rz_bin_dwarf_rnglists_new_from_buf(
 	RZ_OWN RZ_NONNULL RzBuffer *debug_ranges,
 	RZ_OWN RZ_NONNULL RzBuffer *debug_rnglists,
-	RZ_BORROW RZ_NONNULL RzBinDwarfDebugAddr *debug_addr);
+	RZ_BORROW RZ_NULLABLE RzBinDwarfDebugAddr *debug_addr);
 RZ_API RZ_OWN RzBinDwarfRngListTable *rz_bin_dwarf_rnglists_new_from_file(
 	RZ_BORROW RZ_NONNULL RzBinFile *bf,
-	RZ_BORROW RZ_NONNULL RzBinDwarfDebugAddr *debug_addr);
+	RZ_BORROW RZ_NULLABLE RzBinDwarfDebugAddr *debug_addr);
 
 RZ_API bool rz_bin_dwarf_rnglist_table_parse_at(
 	RZ_BORROW RZ_NONNULL RzBinDwarfRngListTable *self,
@@ -1851,6 +1851,9 @@ RZ_API bool rz_bin_dwarf_block_valid(const RzBinDwarfBlock *self);
 RZ_API bool rz_bin_dwarf_block_empty(const RzBinDwarfBlock *self);
 RZ_API void rz_bin_dwarf_block_dump(const RzBinDwarfBlock *self, RzStrBuf *sb);
 RZ_API const ut8 *rz_bin_dwarf_block_data(const RzBinDwarfBlock *self);
+
+/// serialize
+RZ_API bool rz_bin_dwarf_serialize_sdb(const RzBinDWARF *dw, Sdb *sdb);
 
 #ifdef __cplusplus
 }

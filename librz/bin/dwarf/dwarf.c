@@ -58,10 +58,14 @@ RZ_API RZ_OWN RzBinDWARF *rz_bin_dwarf_from_file(
 	dw->str = RzBinDwarfDebugStr_from_file(bf);
 
 	if (opt->flags & RZ_BIN_DWARF_ABBREVS) {
-		dw->abbrevs = rz_bin_dwarf_abbrev_from_file(bf);
+		dw->abbrev = rz_bin_dwarf_abbrev_from_file(bf);
 	}
-	if (opt->flags & RZ_BIN_DWARF_INFO && dw->abbrevs) {
-		dw->info = rz_bin_dwarf_info_from_file(bf, dw->abbrevs, dw->str);
+	if (opt->flags & RZ_BIN_DWARF_ARANGES) {
+		dw->aranges = rz_bin_dwarf_aranges_from_file(bf);
+	}
+
+	if (opt->flags & RZ_BIN_DWARF_INFO && dw->abbrev) {
+		dw->info = rz_bin_dwarf_info_from_file(bf, dw->abbrev, dw->str);
 		if (rz_vector_len(&dw->info->units) > 0) {
 			RzBinDwarfCompUnit *unit = rz_vector_head(&dw->info->units);
 			dw->encoding = unit->hdr.encoding;
@@ -78,10 +82,7 @@ RZ_API RZ_OWN RzBinDWARF *rz_bin_dwarf_from_file(
 	}
 
 	if (opt->flags & RZ_BIN_DWARF_LINES && dw->info) {
-		dw->lines = rz_bin_dwarf_line_from_file(bf, dw->info, opt->line_mask);
-	}
-	if (opt->flags & RZ_BIN_DWARF_ARANGES) {
-		dw->aranges = rz_bin_dwarf_aranges_from_file(bf);
+		dw->line = rz_bin_dwarf_line_from_file(bf, dw->info, opt->line_mask);
 	}
 	return dw;
 }
@@ -90,9 +91,9 @@ RZ_API void rz_bin_dwarf_free(RZ_OWN RZ_NULLABLE RzBinDWARF *dw) {
 	if (!dw) {
 		return;
 	}
-	rz_bin_dwarf_abbrev_free(dw->abbrevs);
+	rz_bin_dwarf_abbrev_free(dw->abbrev);
 	rz_bin_dwarf_info_free(dw->info);
-	rz_bin_dwarf_line_info_free(dw->lines);
+	rz_bin_dwarf_line_info_free(dw->line);
 	rz_bin_dwarf_loclists_free(dw->loc);
 	RzBinDwarfRngListTable_free(dw->rng);
 	rz_bin_dwarf_aranges_free(dw->aranges);

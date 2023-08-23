@@ -648,10 +648,10 @@ RZ_API bool rz_core_bin_apply_dwarf(RzCore *core, RzBinFile *binfile) {
 	}
 
 	const RzBinSourceLineInfo *li = NULL;
-	if (dw->lines) {
+	if (dw->line) {
 		// move all produced rows line info out (TODO: bin loading should do that)
-		li = binfile->o->lines = dw->lines->lines;
-		dw->lines->lines = NULL;
+		li = binfile->o->lines = dw->line->lines;
+		dw->line->lines = NULL;
 	}
 	if (!li) {
 		return false;
@@ -1719,8 +1719,8 @@ static bool bin_dwarf(RzCore *core, RzBinFile *binfile, RzCmdStateOutput *state)
 		free(x); \
 	} while (0)
 	if (state->mode == RZ_OUTPUT_MODE_STANDARD) {
-		if (dw->abbrevs) {
-			print_free(rz_core_bin_dwarf_abbrevs_to_string(dw->abbrevs));
+		if (dw->abbrev) {
+			print_free(rz_core_bin_dwarf_abbrevs_to_string(dw->abbrev));
 		}
 		if (dw->info) {
 			print_free(rz_core_bin_dwarf_debug_info_to_string(dw->info));
@@ -1734,12 +1734,12 @@ static bool bin_dwarf(RzCore *core, RzBinFile *binfile, RzCmdStateOutput *state)
 		if (dw->rng) {
 			print_free(rz_core_bin_dwarf_rnglists_to_string(dw->rng));
 		}
-		if (dw->lines) {
-			print_free(rz_core_bin_dwarf_line_units_to_string(dw->lines->units));
+		if (dw->line) {
+			print_free(rz_core_bin_dwarf_line_units_to_string(dw->line->units));
 		}
 	}
-	if (dw->lines && dw->lines->lines) {
-		rz_core_bin_print_source_line_info(core, dw->lines->lines, state);
+	if (dw->line && dw->line->lines) {
+		rz_core_bin_print_source_line_info(core, dw->line->lines, state);
 	}
 	rz_bin_dwarf_free(dw);
 	return true;

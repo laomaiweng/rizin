@@ -75,7 +75,7 @@ static RzBinDwarfAbbrevTable *RzBinDwarfAbbrevTable_new(size_t offset) {
 	return table;
 }
 
-static bool RzBinDwarfDebugAbbrevs_parse(RzBuffer *buffer, RzBinDwarfDebugAbbrevs *abbrevs) {
+static bool RzBinDwarfDebugAbbrevs_parse(RzBinDwarfDebugAbbrevs *abbrevs, RzBuffer *buffer) {
 	RET_FALSE_IF_FAIL(RzBinDwarfDebugAbbrevs_init(abbrevs));
 	RzBinDwarfAbbrevTable *tbl = RzBinDwarfAbbrevTable_new(rz_buf_tell(buffer));
 	while (true) {
@@ -152,26 +152,32 @@ err:
 
 /**
  * \brief Parse .debug_abbrev section
- * \param binfile  Binfile to parse
+ * \param buffer  Buffer to parse
  * \return RzBinDwarfDebugAbbrevs object
  */
-RZ_API RZ_OWN RzBinDwarfDebugAbbrevs *rz_bin_dwarf_abbrev_parse(RZ_BORROW RZ_NONNULL RzBinFile *binfile) {
-	rz_return_val_if_fail(binfile, NULL);
-	RzBinDwarfDebugAbbrevs *abbrevs = NULL;
-	RzBuffer *buf = get_section_buf(binfile, "debug_abbrev");
-	GOTO_IF_FAIL(buf, ok);
-	abbrevs = RZ_NEW0(RzBinDwarfDebugAbbrevs);
-	GOTO_IF_FAIL(abbrevs, err);
-	abbrevs->tbl_by_offset = ht_up_new(NULL, htup_RzBinDwarfAbbrevTable_free, NULL);
-	GOTO_IF_FAIL(abbrevs->tbl_by_offset, err);
-	GOTO_IF_FAIL(RzBinDwarfDebugAbbrevs_parse(buf, abbrevs), err);
-ok:
+RZ_API RzBinDwarfDebugAbbrevs *rz_bin_dwarf_abbrev_from_buf(RZ_BORROW RZ_NONNULL RzBuffer *buffer) {
+	rz_return_val_if_fail(buffer, NULL);
+	RzBinDwarfDebugAbbrevs *abbrevs = RZ_NEW0(RzBinDwarfDebugAbbrevs);
+	RET_FALSE_IF_FAIL(abbrevs);
+	if (!RzBinDwarfDebugAbbrevs_parse(abbrevs, buffer)) {
+		rz_bin_dwarf_abbrev_free(abbrevs);
+		return NULL;
+	}
+	return abbrevs;
+}
+
+/**
+ * \brief Parse .debug_abbrev section
+ * \param bf  Binfile to parse
+ * \return RzBinDwarfDebugAbbrevs object
+ */
+RZ_API RZ_OWN RzBinDwarfDebugAbbrevs *rz_bin_dwarf_abbrev_from_file(RZ_BORROW RZ_NONNULL RzBinFile *bf) {
+	rz_return_val_if_fail(bf, NULL);
+	RzBuffer *buf = get_section_buf(bf, "debug_abbrev");
+	RET_NULL_IF_FAIL(buf);
+	RzBinDwarfDebugAbbrevs *abbrevs = rz_bin_dwarf_abbrev_from_buf(buf);
 	rz_buf_free(buf);
 	return abbrevs;
-err:
-	rz_bin_dwarf_abbrev_free(abbrevs);
-	abbrevs = NULL;
-	goto ok;
 }
 
 /**

@@ -208,7 +208,7 @@ RZ_API RZ_OWN char *rz_core_bin_dwarf_debug_info_to_string(
 }
 
 typedef struct {
-	RzBinDwarf *dw;
+	RzBinDWARF *dw;
 	RzStrBuf *sb;
 } DumpContext;
 
@@ -232,7 +232,7 @@ static bool htup_loclists_cb(void *u, ut64 k, const void *v) {
 }
 
 RZ_API RZ_OWN char *rz_core_bin_dwarf_loc_to_string(
-	RZ_NONNULL RZ_BORROW RzBinDwarf *dw,
+	RZ_NONNULL RZ_BORROW RzBinDWARF *dw,
 	RZ_NONNULL RZ_BORROW RzBinDwarfLocListTable *loclists) {
 	rz_return_val_if_fail(dw && loclists && loclists->loclist_by_offset, NULL);
 	RzStrBuf *sb = rz_strbuf_new(NULL);

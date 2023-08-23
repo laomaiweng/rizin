@@ -284,15 +284,15 @@ RZ_IPI st64 RzBinDwarfLineHeader_spec_op_advance_line(const RzBinDwarfLineHeader
 
 static bool RzBinDwarfLineHeader_parse(
 	RzBuffer *buffer,
-	ut8 address_size,
-	RzBinDwarfLineHeader *hdr,
-	bool big_endian) {
+	RzBinDwarfEncoding encoding,
+	RzBinDwarfLineHeader *hdr) {
 	rz_return_val_if_fail(hdr && buffer, false);
-
+	bool big_endian = encoding.big_endian;
 	RzBinDwarfLineHeader_init(hdr);
 	hdr->offset = rz_buf_tell(buffer);
 	hdr->is_64bit = false;
-	RET_FALSE_IF_FAIL(buf_read_initial_length(buffer, &hdr->is_64bit, &hdr->unit_length, big_endian));
+	RET_FALSE_IF_FAIL(buf_read_initial_length(
+		buffer, &hdr->is_64bit, &hdr->unit_length, encoding.big_endian));
 
 	U_OR_RET_FALSE(16, hdr->version);
 	if (hdr->version < 2 || hdr->version > 5) {
@@ -303,12 +303,13 @@ static bool RzBinDwarfLineHeader_parse(
 		U8_OR_RET_FALSE(hdr->address_size);
 		U8_OR_RET_FALSE(hdr->segment_selector_size);
 		if (hdr->segment_selector_size != 0) {
-			RZ_LOG_ERROR("DWARF line hdr segment selector size %d is not supported\n", hdr->segment_selector_size);
+			RZ_LOG_ERROR("DWARF line hdr segment selector size %d is not supported\n",
+				hdr->segment_selector_size);
 			return false;
 		}
 	} else if (hdr->version < 5) {
 		// Dwarf < 5 needs this size to be supplied from outside
-		hdr->address_size = address_size;
+		hdr->address_size = encoding.address_size;
 	}
 
 	RET_FALSE_IF_FAIL(buf_read_offset(buffer, &hdr->header_length, hdr->is_64bit, big_endian));
@@ -629,10 +630,10 @@ static void RzBinDwarfLineUnit_free(RzBinDwarfLineUnit *unit) {
 }
 
 static RzBinDwarfLineInfo *RzBinDwarfLineInfo_parse(
-	RzBuffer *buffer, ut8 address_size,
-	RzBinDwarfLineInfoMask mask,
-	bool big_endian,
-	RZ_NULLABLE RzBinDwarfDebugInfo *info) {
+	RzBuffer *buffer,
+	RzBinDwarfEncoding *encoding,
+	RzBinDwarfDebugInfo *debug_info,
+	RzBinDwarfLineInfoMask mask) {
 	// Dwarf 3 Standard 6.2 Line Number Information
 	rz_return_val_if_fail(buffer, NULL);
 	RzBinDwarfLineInfo *li = RZ_NEW0(RzBinDwarfLineInfo);
@@ -657,7 +658,7 @@ static RzBinDwarfLineInfo *RzBinDwarfLineInfo_parse(
 			break;
 		}
 
-		if (!RzBinDwarfLineHeader_parse(buffer, address_size, &unit->header, big_endian)) {
+		if (!RzBinDwarfLineHeader_parse(buffer, *encoding, &unit->header)) {
 			RzBinDwarfLineUnit_free(unit);
 			break;
 		}
@@ -682,12 +683,15 @@ static RzBinDwarfLineInfo *RzBinDwarfLineInfo_parse(
 				.hdr = &unit->header,
 				.regs = &regs,
 				.source_line_info_builder = (mask & RZ_BIN_DWARF_LINE_INFO_MASK_LINES) ? &source_line_info_builder : NULL,
-				.debug_info = info,
+				.debug_info = debug_info,
 				.file_path_cache = line_file_cache,
 			};
 			// reads one whole sequence
 			if (!RzBinDwarfLineOp_parse_all(
-				    &ctx, buffer, (mask & RZ_BIN_DWARF_LINE_INFO_MASK_OPS) ? &unit->ops : NULL, big_endian)) {
+				    &ctx,
+				    buffer,
+				    (mask & RZ_BIN_DWARF_LINE_INFO_MASK_OPS) ? &unit->ops : NULL,
+				    encoding->big_endian)) {
 				break;
 			}
 		} while (true); // if nothing is read -> error, exit
@@ -710,38 +714,35 @@ RZ_API void rz_bin_dwarf_line_info_free(RZ_OWN RZ_NULLABLE RzBinDwarfLineInfo *l
 	free(li);
 }
 
-RZ_API void rz_bin_dwarf_info_free(RZ_OWN RZ_NULLABLE RzBinDwarfDebugInfo *info) {
-	if (!info) {
-		return;
-	}
-	rz_vector_fini(&info->units);
-	ht_up_free(info->line_info_offset_comp_dir);
-	ht_up_free(info->die_tbl);
-	ht_up_free(info->unit_tbl);
-	free(info);
+RZ_API RzBinDwarfLineInfo *rz_bin_dwarf_line_from_buf(
+	RZ_BORROW RZ_NONNULL RzBuffer *buffer,
+	RZ_BORROW RZ_NONNULL RzBinDwarfEncoding *encoding,
+	RZ_BORROW RZ_NULLABLE RzBinDwarfDebugInfo *debug_info,
+	RzBinDwarfLineInfoMask mask) {
+	rz_return_val_if_fail(buffer && encoding, NULL);
+	return RzBinDwarfLineInfo_parse(buffer, encoding, debug_info, mask);
 }
 
 /**
  * \brief Parse the .debug_line section
- * \param binfile RzBinFile to parse
+ * \param bf RzBinFile to parse
  * \param info RzBinDwarfDebugInfo instance
  * \param mask RzBinDwarfLineInfoMask
  * \return RzBinDwarfLineInfo or NULL if failed
  */
-RZ_API RzBinDwarfLineInfo *rz_bin_dwarf_parse_line(
-	RZ_BORROW RZ_NONNULL RzBinFile *binfile,
-	RZ_BORROW RZ_NONNULL RzBinDwarfDebugInfo *info,
+RZ_API RzBinDwarfLineInfo *rz_bin_dwarf_line_from_file(
+	RZ_BORROW RZ_NONNULL RzBinFile *bf,
+	RZ_BORROW RZ_NULLABLE RzBinDwarfDebugInfo *debug_info,
 	RzBinDwarfLineInfoMask mask) {
-	rz_return_val_if_fail(binfile, NULL);
-	RzBuffer *buf = get_section_buf(binfile, "debug_line");
-	if (!buf) {
+	rz_return_val_if_fail(bf, NULL);
+	RzBinDwarfEncoding encoding_bf = { 0 };
+	if (!RzBinDwarfEncoding_from_file(&encoding_bf, bf)) {
 		return NULL;
 	}
-	// Actually parse the section
-	RzBinInfo *binfo = binfile->o && binfile->o->info ? binfile->o->info : NULL;
-	ut8 address_size = binfo && binfo->bits ? binfo->bits / 8 : 4;
-	bool big_endian = binfo && binfo->big_endian;
-	RzBinDwarfLineInfo *r = RzBinDwarfLineInfo_parse(buf, address_size, mask, big_endian, info);
+
+	RzBuffer *buf = get_section_buf(bf, "debug_line");
+	RET_NULL_IF_FAIL(buf);
+	RzBinDwarfLineInfo *line = RzBinDwarfLineInfo_parse(buf, &encoding_bf, debug_info, mask);
 	rz_buf_free(buf);
-	return r;
+	return line;
 }

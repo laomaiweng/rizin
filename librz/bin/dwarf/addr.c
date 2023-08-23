@@ -24,18 +24,17 @@ RZ_IPI void DebugAddr_free(RzBinDwarfDebugAddr *self) {
 	free(self);
 }
 
-RZ_IPI RzBinDwarfDebugAddr *DebugAddr_parse(RzBinFile *bf) {
-	if (!bf) {
-		return NULL;
-	}
-
-	RzBuffer *buffer = get_section_buf(bf, ".debug_addr");
-	RET_NULL_IF_FAIL(buffer);
+RZ_IPI RzBinDwarfDebugAddr *DebugAddr_from_buf(RzBuffer *buffer) {
+	rz_return_val_if_fail(buffer, NULL);
 	RzBinDwarfDebugAddr *self = RZ_NEW0(RzBinDwarfDebugAddr);
-	if (!self) {
-		rz_buf_free(buffer);
-		return NULL;
-	}
+	RET_NULL_IF_FAIL(self);
 	self->buffer = buffer;
 	return self;
+}
+
+RZ_IPI RzBinDwarfDebugAddr *DebugAddr_from_file(RzBinFile *bf) {
+	rz_return_val_if_fail(bf, NULL);
+	RzBuffer *buffer = get_section_buf(bf, ".debug_addr");
+	RET_NULL_IF_FAIL(buffer);
+	return DebugAddr_from_buf(buffer);
 }

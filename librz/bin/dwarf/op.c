@@ -604,8 +604,8 @@ static RzBinDwarfValueType ValueType_from_name(const char *name, ut8 byte_size) 
 	return RzBinDwarfValueType_GENERIC;
 }
 
-static RzBinDwarfValueType ValueType_from_die(RzBinDwarfEvaluation *eval, const RzBinDwarf *dw, UnitOffset offset) {
-	RzBinDwarfDie *die = ht_up_find(dw->info->die_tbl, eval->unit->offset + offset, NULL);
+static RzBinDwarfValueType ValueType_from_die(RzBinDwarfEvaluation *eval, const RzBinDWARF *dw, UnitOffset offset) {
+	RzBinDwarfDie *die = ht_up_find(dw->info->die_by_offset, eval->unit->offset + offset, NULL);
 	if (!die) {
 		return RzBinDwarfValueType_GENERIC;
 	}
@@ -681,7 +681,7 @@ static void vec_RzBinDwarfExprStackItem_fini(void *v, void *u) {
 	RzBinDwarfExprStackItem_fini(v);
 }
 
-RZ_API RZ_OWN RzBinDwarfEvaluation *rz_bin_dwarf_evaluation_new(RZ_OWN RZ_NONNULL RzBuffer *byte_code, RZ_BORROW RZ_NONNULL const RzBinDwarf *dw, RZ_BORROW RZ_NULLABLE const RzBinDwarfCompUnit *unit, RZ_BORROW RZ_NULLABLE const RzBinDwarfDie *die) {
+RZ_API RZ_OWN RzBinDwarfEvaluation *rz_bin_dwarf_evaluation_new(RZ_OWN RZ_NONNULL RzBuffer *byte_code, RZ_BORROW RZ_NONNULL const RzBinDWARF *dw, RZ_BORROW RZ_NULLABLE const RzBinDwarfCompUnit *unit, RZ_BORROW RZ_NULLABLE const RzBinDwarfDie *die) {
 	rz_return_val_if_fail(byte_code && dw, NULL);
 	RzBinDwarfEvaluation *self = RZ_NEW0(RzBinDwarfEvaluation);
 	RET_NULL_IF_FAIL(self);
@@ -700,7 +700,7 @@ RZ_API RZ_OWN RzBinDwarfEvaluation *rz_bin_dwarf_evaluation_new(RZ_OWN RZ_NONNUL
 	return self;
 }
 
-RZ_API RZ_OWN RzBinDwarfEvaluation *rz_bin_dwarf_evaluation_new_from_block(RZ_BORROW RZ_NONNULL const RzBinDwarfBlock *block, RZ_BORROW RZ_NONNULL const RzBinDwarf *dw, RZ_BORROW RZ_NULLABLE const RzBinDwarfCompUnit *unit, RZ_BORROW RZ_NULLABLE const RzBinDwarfDie *die) {
+RZ_API RZ_OWN RzBinDwarfEvaluation *rz_bin_dwarf_evaluation_new_from_block(RZ_BORROW RZ_NONNULL const RzBinDwarfBlock *block, RZ_BORROW RZ_NONNULL const RzBinDWARF *dw, RZ_BORROW RZ_NULLABLE const RzBinDwarfCompUnit *unit, RZ_BORROW RZ_NULLABLE const RzBinDwarfDie *die) {
 	rz_return_val_if_fail(block && dw, NULL);
 	RzBuffer *expr = RzBinDwarfBlock_as_buf(block);
 	RET_NULL_IF_FAIL(expr);
@@ -1354,7 +1354,7 @@ static RzBinDwarfLocation *RzBinDwarfEvaluationResult_to_loc(RzBinDwarfEvaluatio
  */
 RZ_API RZ_OWN RzBinDwarfLocation *rz_bin_dwarf_location_from_block(
 	RZ_BORROW RZ_NULLABLE const RzBinDwarfBlock *block,
-	RZ_BORROW RZ_NULLABLE const RzBinDwarf *dw,
+	RZ_BORROW RZ_NULLABLE const RzBinDWARF *dw,
 	RZ_BORROW RZ_NULLABLE const RzBinDwarfCompUnit *unit,
 	RZ_BORROW RZ_NULLABLE const RzBinDwarfDie *die) {
 	rz_return_val_if_fail(block && dw, NULL);

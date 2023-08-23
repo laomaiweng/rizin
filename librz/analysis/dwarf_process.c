@@ -11,7 +11,7 @@
 typedef struct dwarf_parse_context_t {
 	const RzAnalysis *analysis;
 	RzBinDwarfCompUnit *unit;
-	RzBinDwarf *dw;
+	RzBinDWARF *dw;
 } Context;
 
 static RZ_OWN RzType *type_parse_from_offset_internal(
@@ -582,12 +582,12 @@ static char *die_name(const RzBinDwarfDie *die) {
 			  : rz_str_newf("die_0x%" PFMT64x, die->offset);
 }
 
-static RzPVector /*<RzBinDwarfDie *>*/ *die_children(const RzBinDwarfDie *die, RzBinDwarf *dw) {
+static RzPVector /*<RzBinDwarfDie *>*/ *die_children(const RzBinDwarfDie *die, RzBinDWARF *dw) {
 	RzPVector /*<RzBinDwarfDie *>*/ *vec = rz_pvector_new(NULL);
 	if (!vec) {
 		return NULL;
 	}
-	RzBinDwarfCompUnit *unit = ht_up_find(dw->info->unit_tbl, die->unit_offset, NULL);
+	RzBinDwarfCompUnit *unit = ht_up_find(dw->info->unit_by_offset, die->unit_offset, NULL);
 	if (!unit) {
 		goto err;
 	}
@@ -678,7 +678,7 @@ static RzBaseType *RzBaseType_from_die(Context *ctx, const RzBinDwarfDie *die) {
 	rz_vector_foreach(&die->attrs, attr) {
 		switch (attr->name) {
 		case DW_AT_specification: {
-			RzBinDwarfDie *decl = ht_up_find(ctx->dw->info->die_tbl, attr->reference, NULL);
+			RzBinDwarfDie *decl = ht_up_find(ctx->dw->info->die_by_offset, attr->reference, NULL);
 			if (!decl) {
 				goto err;
 			}
@@ -817,7 +817,7 @@ static RZ_OWN RzType *type_parse_from_offset_internal(
 	}
 	set_u_add(visited, offset);
 
-	RzBinDwarfDie *die = ht_up_find(ctx->dw->info->die_tbl, offset, NULL);
+	RzBinDwarfDie *die = ht_up_find(ctx->dw->info->die_by_offset, offset, NULL);
 	if (!die) {
 		return NULL;
 	}
@@ -961,7 +961,7 @@ static inline const char *select_name(const char *demangle_name, const char *lin
 }
 
 static RzType *type_parse_from_abstract_origin(Context *ctx, ut64 offset, char **name_out) {
-	RzBinDwarfDie *die = ht_up_find(ctx->dw->info->die_tbl, offset, NULL);
+	RzBinDwarfDie *die = ht_up_find(ctx->dw->info->die_by_offset, offset, NULL);
 	if (!die) {
 		return NULL;
 	}
@@ -1498,7 +1498,7 @@ static bool function_parse(
 			break;
 		case DW_AT_specification: /* reference to declaration DIE with more info */
 		{
-			RzBinDwarfDie *spec = ht_up_find(ctx->dw->info->die_tbl, val->reference, NULL);
+			RzBinDwarfDie *spec = ht_up_find(ctx->dw->info->die_by_offset, val->reference, NULL);
 			if (!spec) {
 				RZ_LOG_ERROR("DWARF cannot find specification DIE at 0x%" PFMT64x " f.offset=0x%" PFMT64x "\n", val->reference, die->offset);
 				break;
@@ -1665,7 +1665,7 @@ static void process_die(Context *ctx, RzBinDwarfDie *die) {
  * \param analysis RzAnalysis pointer
  * \param dw RzBinDwarf pointer
  */
-RZ_API void rz_analysis_dwarf_process_info(const RzAnalysis *analysis, RzBinDwarf *dw) {
+RZ_API void rz_analysis_dwarf_process_info(const RzAnalysis *analysis, RzBinDWARF *dw) {
 	rz_return_if_fail(analysis && dw);
 	analysis->debug_info->dwarf_register_mapping = dwarf_register_mapping_query(analysis->cpu, analysis->bits);
 	Context ctx = {
@@ -1682,7 +1682,7 @@ RZ_API void rz_analysis_dwarf_process_info(const RzAnalysis *analysis, RzBinDwar
 		for (RzBinDwarfDie *die = rz_vector_head(&unit->dies);
 			(ut8 *)die < (ut8 *)unit->dies.a + unit->dies.len * unit->dies.elem_size;
 			(die->sibling > die->offset)
-				? die = ht_up_find(dw->info->die_tbl, die->sibling, NULL)
+				? die = ht_up_find(dw->info->die_by_offset, die->sibling, NULL)
 				: ++die) {
 			process_die(&ctx, die);
 		}

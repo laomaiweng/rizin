@@ -454,7 +454,7 @@ typedef struct {
 	HtUP /*<ut64, RzBaseType *>*/ *base_type_by_offset; ///< Store all RzBaseType parsed from DWARF by DIE offset
 	HtPP /*<const char*, RzPVector<const RzBaseType *>>*/ *base_type_by_name; ///< Store all RzBaseType parsed from DWARF by DIE offset
 	DWARF_RegisterMapping dwarf_register_mapping; ///< Store the mapping function between DWARF registers number and register name in current architecture
-	RzBinDwarf *dw; ///< Holds ownership of RzBinDwarf, avoid releasing it prematurely
+	RzBinDWARF *dw; ///< Holds ownership of RzBinDwarf, avoid releasing it prematurely
 } RzAnalysisDebugInfo;
 
 typedef struct rz_analysis_t {
@@ -2237,7 +2237,7 @@ RZ_API RZ_OWN RzCallable *rz_analysis_function_derive_type(RzAnalysis *analysis,
 RZ_API void rz_parse_pdb_types(const RzTypeDB *typedb, const RzPdb *pdb);
 
 /* DWARF */
-RZ_API void rz_analysis_dwarf_process_info(const RzAnalysis *analysis, RzBinDwarf *dw);
+RZ_API void rz_analysis_dwarf_process_info(const RzAnalysis *analysis, RzBinDWARF *dw);
 RZ_API void rz_analysis_dwarf_integrate_functions(RzAnalysis *analysis, RzFlag *flags);
 RZ_API RzAnalysisDebugInfo *rz_analysis_debug_info_new();
 RZ_API void rz_analysis_debug_info_free(RzAnalysisDebugInfo *debuginfo);

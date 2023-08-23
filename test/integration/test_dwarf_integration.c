@@ -41,14 +41,11 @@ static bool test_parse_dwarf_types(void) {
 	// TODO fix, how to correctly promote binary info to the RzAnalysis in unit tests?
 	rz_analysis_use(analysis, "x86");
 	rz_analysis_set_bits(analysis, 32);
-	RzBinDwarfParseOptions dw_opt = {
-		.big_endian = analysis->big_endian,
-		.addr_size = analysis->bits / 8,
+	RzBinDWARFOption dw_opt = {
 		.line_mask = RZ_BIN_DWARF_LINE_INFO_MASK_LINES,
-		.flags = RZ_BIN_DWARF_PARSE_ABBREVS | RZ_BIN_DWARF_PARSE_INFO | RZ_BIN_DWARF_PARSE_LOC,
+		.flags = RZ_BIN_DWARF_ABBREVS | RZ_BIN_DWARF_INFO | RZ_BIN_DWARF_LOC,
 	};
-	//	rz_log_set_level(RZ_LOGLVL_DEBUG);
-	RzBinDwarf *dw = rz_bin_dwarf_parse(bf, &dw_opt);
+	RzBinDWARF *dw = rz_bin_dwarf_from_file(bf, &dw_opt);
 
 	mu_assert_notnull(dw->abbrevs, "Couldn't parse Abbreviations");
 	mu_assert_notnull(dw->info, "Couldn't parse debug_info section");
@@ -158,13 +155,12 @@ static bool test_dwarf_function_parsing_cpp(void) {
 	// TODO fix, how to correctly promote binary info to the RzAnalysis in unit tests?
 	rz_analysis_use(analysis, "x86");
 	rz_analysis_set_bits(analysis, 64);
-	RzBinDwarfParseOptions dw_opt = {
-		.addr_size = analysis->bits / 8,
+	RzBinDWARFOption dw_opt = {
 		.line_mask = RZ_BIN_DWARF_LINE_INFO_MASK_LINES,
-		.flags = RZ_BIN_DWARF_PARSE_ABBREVS | RZ_BIN_DWARF_PARSE_INFO,
+		.flags = RZ_BIN_DWARF_ABBREVS | RZ_BIN_DWARF_INFO,
 	};
 
-	RzBinDwarf *dw = rz_bin_dwarf_parse(bf, &dw_opt);
+	RzBinDWARF *dw = rz_bin_dwarf_from_file(bf, &dw_opt);
 	mu_assert_notnull(dw->abbrevs, "Couldn't parse Abbreviations");
 	mu_assert_notnull(dw->info, "Couldn't parse debug_info section");
 
@@ -206,12 +202,11 @@ static bool test_dwarf_function_parsing_go(void) {
 	// TODO fix, how to correctly promote binary info to the RzAnalysis in unit tests?
 	rz_analysis_use(analysis, "x86");
 	rz_analysis_set_bits(analysis, 64);
-	RzBinDwarfParseOptions dw_opt = {
-		.addr_size = analysis->bits / 8,
+	RzBinDWARFOption dw_opt = {
 		.line_mask = RZ_BIN_DWARF_LINE_INFO_MASK_LINES,
-		.flags = RZ_BIN_DWARF_PARSE_ABBREVS | RZ_BIN_DWARF_PARSE_INFO | RZ_BIN_DWARF_PARSE_LOC,
+		.flags = RZ_BIN_DWARF_ABBREVS | RZ_BIN_DWARF_INFO | RZ_BIN_DWARF_LOC,
 	};
-	RzBinDwarf *dw = rz_bin_dwarf_parse(bf, &dw_opt);
+	RzBinDWARF *dw = rz_bin_dwarf_from_file(bf, &dw_opt);
 	mu_assert_notnull(dw->abbrevs, "Couldn't parse Abbreviations");
 	mu_assert_notnull(dw->info, "Couldn't parse debug_info section");
 	mu_assert_notnull(dw->loc, "Couldn't parse loc section");
@@ -256,12 +251,11 @@ static bool test_dwarf_function_parsing_rust(void) {
 	// TODO fix, how to correctly promote binary info to the RzAnalysis in unit tests?
 	rz_analysis_use(analysis, "x86");
 	rz_analysis_set_bits(analysis, 64);
-	RzBinDwarfParseOptions dw_opt = {
-		.addr_size = analysis->bits / 8,
+	RzBinDWARFOption dw_opt = {
 		.line_mask = RZ_BIN_DWARF_LINE_INFO_MASK_LINES,
-		.flags = RZ_BIN_DWARF_PARSE_ABBREVS | RZ_BIN_DWARF_PARSE_INFO | RZ_BIN_DWARF_PARSE_LOC,
+		.flags = RZ_BIN_DWARF_ABBREVS | RZ_BIN_DWARF_INFO | RZ_BIN_DWARF_LOC,
 	};
-	RzBinDwarf *dw = rz_bin_dwarf_parse(bf, &dw_opt);
+	RzBinDWARF *dw = rz_bin_dwarf_from_file(bf, &dw_opt);
 
 	mu_assert_notnull(dw->abbrevs, "Couldn't parse Abbreviations");
 	mu_assert_notnull(dw->info, "Couldn't parse debug_info section");

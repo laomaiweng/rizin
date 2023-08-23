@@ -904,7 +904,7 @@ RZ_API RZ_OWN char *rz_core_bin_dwarf_attr_to_string(
 RZ_API RZ_OWN char *rz_core_bin_dwarf_debug_info_to_string(
 	RZ_NONNULL RZ_BORROW const RzBinDwarfDebugInfo *info);
 RZ_API RZ_OWN char *rz_core_bin_dwarf_loc_to_string(
-	RZ_NONNULL RZ_BORROW RzBinDwarf *dw,
+	RZ_NONNULL RZ_BORROW RzBinDWARF *dw,
 	RZ_NONNULL RZ_BORROW RzBinDwarfLocListTable *loclists);
 RZ_API RZ_OWN char *rz_core_bin_dwarf_aranges_to_string(
 	RZ_NONNULL RZ_BORROW RzList /*<RzBinDwarfARangeSet *>*/ *aranges);

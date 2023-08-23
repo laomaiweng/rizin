@@ -298,7 +298,9 @@ err:
  * \param encoding RzBinDwarfEncoding instance
  * \return true on success, false otherwise
  */
-RZ_API bool rz_bin_dwarf_loclist_table_parse_all(RZ_BORROW RZ_NONNULL RzBinDwarfLocListTable *self, RZ_BORROW RZ_NONNULL RzBinDwarfEncoding *encoding) {
+RZ_API bool rz_bin_dwarf_loclist_table_parse_all(
+	RZ_BORROW RZ_NONNULL RzBinDwarfLocListTable *self,
+	RZ_BORROW RZ_NONNULL RzBinDwarfEncoding *encoding) {
 	RET_NULL_IF_FAIL(self);
 	RzBuffer *buffer = self->debug_loc;
 	RzBinDwarfLocListsFormat format = RzBinDwarfLocListsFormat_BARE;
@@ -337,24 +339,43 @@ static void HTUP_RzBinDwarfLocList_free(HtUPKv *kv) {
 }
 
 /**
+ * \brief Create a new RzBinDwarfLocListTable instance,
+ *        takes ownership of the buffers, and any of them must be non-NULL
+ * \param debug_loc .debug_loc section buffer
+ * \param debug_loc_lists .debug_loclists section buffer
+ * \param dw RzBinDWARF instance
+ * \return RzBinDwarfLocListTable instance on success, NULL otherwise
+ */
+RZ_API RZ_OWN RzBinDwarfLocListTable *rz_bin_dwarf_loclists_new_from_buf(
+	RZ_OWN RZ_NULLABLE RzBuffer *debug_loc,
+	RZ_OWN RZ_NULLABLE RzBuffer *debug_loc_lists,
+	RZ_BORROW RZ_NULLABLE RzBinDwarfDebugAddr *debug_addr) {
+	rz_return_val_if_fail(debug_loc || debug_loc_lists, NULL);
+	RzBinDwarfLocListTable *self = RZ_NEW0(RzBinDwarfLocListTable);
+	RET_NULL_IF_FAIL(self);
+	self->debug_addr = debug_addr;
+	self->debug_loc = debug_loc;
+	self->debug_loclists = debug_loc_lists;
+	self->loclist_by_offset = ht_up_new(NULL, HTUP_RzBinDwarfLocList_free, NULL);
+	return self;
+}
+
+/**
  * \brief Create a new RzBinDwarfLocListTable instance
  * \param bf RzBinFile instance
  * \param dw RzBinDwarf instance
  * \return RzBinDwarfLocListTable instance on success, NULL otherwise
  */
-RZ_API RZ_OWN RzBinDwarfLocListTable *rz_bin_dwarf_loclists_new(RZ_BORROW RZ_NONNULL RzBinFile *bf, RZ_BORROW RZ_NONNULL RzBinDwarf *dw) {
-	RET_NULL_IF_FAIL(bf && dw);
-	RzBinDwarfLocListTable *self = RZ_NEW0(RzBinDwarfLocListTable);
-	self->debug_addr = dw->addr;
-	self->debug_loc = get_section_buf(bf, ".debug_loc");
-	self->debug_loclists = get_section_buf(bf, ".debug_loclists");
-	if (!(self->debug_loc || self->debug_loclists)) {
-		RZ_LOG_DEBUG("No .debug_loc and .debug_loclists section found\n");
-		rz_bin_dwarf_loclists_free(self);
+RZ_API RZ_OWN RzBinDwarfLocListTable *rz_bin_dwarf_loclists_new_from_file(
+	RZ_BORROW RZ_NONNULL RzBinFile *bf,
+	RZ_BORROW RZ_NULLABLE RzBinDwarfDebugAddr *debug_addr) {
+	RET_NULL_IF_FAIL(bf);
+	RzBuffer *debug_loc = get_section_buf(bf, ".debug_loc");
+	RzBuffer *debug_loclists = get_section_buf(bf, ".debug_loclists");
+	if (!(debug_loc || debug_loclists)) {
 		return NULL;
 	}
-	self->loclist_by_offset = ht_up_new(NULL, HTUP_RzBinDwarfLocList_free, NULL);
-	return self;
+	return rz_bin_dwarf_loclists_new_from_buf(debug_loc, debug_loclists, debug_addr);
 }
 
 RZ_API void rz_bin_dwarf_loclists_free(RZ_OWN RZ_NULLABLE RzBinDwarfLocListTable *self) {

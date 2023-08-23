@@ -6,12 +6,13 @@
 
 #define CHECK_STRING \
 	if (!value->string.content) { \
-		const char *tag_str = in->type == DW_ATTR_TYPE_DEF \
+		const char *tag_str = opt->type == DW_ATTR_TYPE_DEF \
 			? rz_bin_dwarf_attr(value->name) \
-			: (in->type == DW_ATTR_TYPE_FILE_ENTRY_FORMAT \
-					  ? rz_bin_dwarf_lnct(in->format->content_type) \
+			: (opt->type == DW_ATTR_TYPE_FILE_ENTRY_FORMAT \
+					  ? rz_bin_dwarf_lnct(opt->format->content_type) \
 					  : "unknown"); \
-		RZ_LOG_ERROR("Failed to read string %s [%s]\n", tag_str, rz_bin_dwarf_form(value->form)); \
+		RZ_LOG_ERROR("Failed to read string [0x%" PFMT64x "] %s [%s]\n", \
+			value->string.offset, tag_str, rz_bin_dwarf_form(value->form)); \
 		return false; \
 	}
 
@@ -21,29 +22,28 @@
  * \brief Parses attribute value based on its definition
  *        and stores it into `value`
  */
-RZ_IPI bool RzBinDwarfAttr_parse(RzBuffer *buffer, RzBinDwarfAttr *value, DwAttrOption *in) {
-	rz_return_val_if_fail(in && value && buffer, false);
+RZ_IPI bool RzBinDwarfAttr_parse(RzBuffer *buffer, RzBinDwarfAttr *value, DwAttrOption *opt) {
+	rz_return_val_if_fail(opt && value && buffer, false);
 	ut8 address_size = 0;
 	bool is_64bit = false;
 	ut64 unit_offset = 0;
-	if (in->type == DW_ATTR_TYPE_DEF) {
-		value->name = in->def->name;
-		value->form = in->def->form;
-		address_size = in->comp_unit_hdr->encoding.address_size;
-		is_64bit = in->comp_unit_hdr->encoding.is_64bit;
-		unit_offset = in->comp_unit_hdr->unit_offset;
-	} else if (in->type == DW_ATTR_TYPE_FILE_ENTRY_FORMAT) {
-		value->form = in->format->form;
-		address_size = in->line_hdr->address_size;
-		is_64bit = in->line_hdr->is_64bit;
-		unit_offset = in->line_hdr->offset;
+	if (opt->type == DW_ATTR_TYPE_DEF) {
+		value->name = opt->def->name;
+		value->form = opt->def->form;
+		address_size = opt->comp_unit_hdr->encoding.address_size;
+		is_64bit = opt->comp_unit_hdr->encoding.is_64bit;
+		unit_offset = opt->comp_unit_hdr->unit_offset;
+	} else if (opt->type == DW_ATTR_TYPE_FILE_ENTRY_FORMAT) {
+		value->form = opt->format->form;
+		address_size = opt->line_hdr->address_size;
+		is_64bit = opt->line_hdr->is_64bit;
+		unit_offset = opt->line_hdr->offset;
 	} else {
 		rz_warn_if_reached();
 		return false;
 	}
 
-	bool big_endian = in->encoding.big_endian;
-	RzBuffer *str_buffer = in->str_buffer;
+	bool big_endian = opt->encoding.big_endian;
 
 	// http://www.dwarfstd.org/doc/DWARF4.pdf#page=161&zoom=100,0,560
 	switch (value->form) {
@@ -118,8 +118,8 @@ RZ_IPI bool RzBinDwarfAttr_parse(RzBuffer *buffer, RzBinDwarfAttr *value, DwAttr
 	case DW_FORM_strp:
 		value->kind = DW_AT_KIND_STRING;
 		RET_FALSE_IF_FAIL(buf_read_offset(buffer, &value->string.offset, is_64bit, big_endian));
-		if (str_buffer && value->string.offset < rz_buf_size(str_buffer)) {
-			value->string.content = rz_buf_get_string(str_buffer, value->string.offset);
+		if (opt->debug_str) {
+			value->string.content = RzBinDwarfDebugStr_get(opt->debug_str, value->string.offset);
 		}
 		CHECK_STRING;
 		break;
@@ -191,7 +191,7 @@ RZ_IPI bool RzBinDwarfAttr_parse(RzBuffer *buffer, RzBinDwarfAttr *value, DwAttr
 		break;
 	case DW_FORM_implicit_const:
 		value->kind = DW_AT_KIND_CONSTANT;
-		value->uconstant = in->type == DW_ATTR_TYPE_DEF ? in->def->special : 0;
+		value->uconstant = opt->type == DW_ATTR_TYPE_DEF ? opt->def->special : 0;
 		break;
 	/**  addrx* forms : The index is relative to the value of the
 		DW_AT_addr_base attribute of the associated compilation unit.
@@ -257,9 +257,6 @@ RZ_IPI void RzBinDwarfAttr_fini(RzBinDwarfAttr *val) {
 		return;
 	}
 	switch (val->kind) {
-	case DW_AT_KIND_STRING:
-		RZ_FREE(val->string.content);
-		break;
 	case DW_AT_KIND_BLOCK:
 		RzBinDwarfBlock_fini(&val->block);
 		break;

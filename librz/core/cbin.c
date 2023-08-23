@@ -632,13 +632,11 @@ RZ_API bool rz_core_bin_apply_dwarf(RzCore *core, RzBinFile *binfile) {
 		return false;
 	}
 
-	RzBinDwarfParseOptions opt = {
-		.big_endian = core->analysis->big_endian,
-		.addr_size = core->analysis->bits / 8,
+	RzBinDWARFOption opt = {
 		.line_mask = RZ_BIN_DWARF_LINE_INFO_MASK_LINES,
-		.flags = RZ_BIN_DWARF_PARSE_ALL - RZ_BIN_DWARF_PARSE_LOC
+		.flags = RZ_BIN_DWARF_ALL - RZ_BIN_DWARF_LOC
 	};
-	RzBinDwarf *dw = rz_bin_dwarf_parse(binfile, &opt);
+	RzBinDWARF *dw = rz_bin_dwarf_from_file(binfile, &opt);
 	if (!dw) {
 		return false;
 	}
@@ -1707,13 +1705,11 @@ static bool bin_dwarf(RzCore *core, RzBinFile *binfile, RzCmdStateOutput *state)
 
 	RzBinDwarfLineInfoMask mask = RZ_BIN_DWARF_LINE_INFO_MASK_LINES;
 	mask |= (state->mode == RZ_OUTPUT_MODE_STANDARD ? RZ_BIN_DWARF_LINE_INFO_MASK_OPS : 0);
-	RzBinDwarfParseOptions dw_opt = {
-		.big_endian = core->analysis->big_endian,
-		.addr_size = core->analysis->bits / 8,
+	RzBinDWARFOption dw_opt = {
 		.line_mask = mask,
-		.flags = RZ_BIN_DWARF_PARSE_ALL,
+		.flags = RZ_BIN_DWARF_ALL,
 	};
-	RzBinDwarf *dw = rz_bin_dwarf_parse(binfile, &dw_opt);
+	RzBinDWARF *dw = rz_bin_dwarf_from_file(binfile, &dw_opt);
 	if (!dw) {
 		return false;
 	}
@@ -1735,8 +1731,8 @@ static bool bin_dwarf(RzCore *core, RzBinFile *binfile, RzCmdStateOutput *state)
 		if (dw->aranges) {
 			print_free(rz_core_bin_dwarf_aranges_to_string(dw->aranges));
 		}
-		if (dw->rnglists) {
-			print_free(rz_core_bin_dwarf_rnglists_to_string(dw->rnglists));
+		if (dw->rng) {
+			print_free(rz_core_bin_dwarf_rnglists_to_string(dw->rng));
 		}
 		if (dw->lines) {
 			print_free(rz_core_bin_dwarf_line_units_to_string(dw->lines->units));

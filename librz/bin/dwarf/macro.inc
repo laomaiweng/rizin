@@ -87,3 +87,10 @@
 #define SLE128_OR_GOTO(out, label) WRAP_VA_SLE128(out, GOTO_IF_FAIL, label)
 
 #define U_ADDR_SIZE_OR_RET_FALSE(out) WRAP_UX(encoding->address_size, out, RET_FALSE_IF_FAIL)
+
+#define Ht_FREE_IMPL(V, T, f) \
+	static void Ht##V##_##T##_free(Ht##V##Kv *kv) { \
+		f(kv->value); \
+	}
+
+Ht_FREE_IMPL(UP, string, free);

@@ -236,19 +236,44 @@ static bool RzBinDwarfRngListTable_parse(RzBinDwarfRngListTable *self, RzBuffer 
 	return true;
 }
 
-RZ_API RZ_OWN RzBinDwarfRngListTable *rz_bin_dwarf_rnglists_new(RZ_BORROW RZ_NONNULL RzBinFile *bf, RZ_BORROW RZ_NONNULL RzBinDwarf *dw) {
-	RET_NULL_IF_FAIL(bf && dw);
+/**
+ * \brief Create a new RzBinDwarfRngListTable from the given buffers
+ *        takes ownership of the buffers, and any of them must be non-NULL
+ * \param debug_ranges the .debug_ranges buffer
+ * \param debug_rnglists  the .debug_rnglists buffer
+ * \param dw the RzBinDWARF instance
+ * \return RzBinDwarfRngListTable instance on success, NULL otherwise
+ */
+RZ_API RZ_OWN RzBinDwarfRngListTable *rz_bin_dwarf_rnglists_new_from_buf(
+	RZ_OWN RZ_NONNULL RzBuffer *debug_ranges,
+	RZ_OWN RZ_NONNULL RzBuffer *debug_rnglists,
+	RZ_BORROW RZ_NONNULL RzBinDwarfDebugAddr *debug_addr) {
+	rz_return_val_if_fail((debug_ranges || debug_rnglists) && debug_addr, NULL);
 	RzBinDwarfRngListTable *self = RZ_NEW0(RzBinDwarfRngListTable);
-	self->debug_addr = dw->addr;
-	self->debug_ranges = get_section_buf(bf, ".debug_ranges");
-	self->debug_rnglists = get_section_buf(bf, ".debug_rnglists");
-	if (!(self->debug_ranges || self->debug_rnglists)) {
-		RZ_LOG_DEBUG("No .debug_loc and .debug_loclists section found\n");
-		RzBinDwarfRngListTable_free(self);
-		return NULL;
-	}
+	RET_NULL_IF_FAIL(self);
+	self->debug_addr = debug_addr;
+	self->debug_ranges = debug_ranges;
+	self->debug_rnglists = debug_rnglists;
 	self->rnglist_by_offset = ht_up_new(NULL, HTUP_RzBinDwarfRngList_free, NULL);
 	return self;
+}
+
+/**
+ * \brief Create a new RzBinDwarfRngListTable from the given RzBinFile
+ * \param bf the RzBinFile
+ * \param dw the RzBinDWARF instance
+ * \return the RzBinDwarfRngListTable instance on success, NULL otherwise
+ */
+RZ_API RZ_OWN RzBinDwarfRngListTable *rz_bin_dwarf_rnglists_new_from_file(
+	RZ_BORROW RZ_NONNULL RzBinFile *bf,
+	RZ_BORROW RZ_NONNULL RzBinDwarfDebugAddr *debug_addr) {
+	RET_NULL_IF_FAIL(bf && debug_addr);
+	RzBuffer *debug_ranges = get_section_buf(bf, ".debug_ranges");
+	RzBuffer *debug_rnglists = get_section_buf(bf, ".debug_rnglists");
+	if (!(debug_ranges || debug_rnglists)) {
+		return NULL;
+	}
+	return rz_bin_dwarf_rnglists_new_from_buf(debug_ranges, debug_rnglists, debug_addr);
 }
 
 /**

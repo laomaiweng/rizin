@@ -74,10 +74,10 @@ bool test_dwarf3_c(void) {
 	RzBinFile *bf = rz_bin_open(bin, "bins/elf/dwarf3_c.elf", &opt);
 	mu_assert_notnull(bf, "couldn't open file");
 
-	RzBinDwarfParseOptions parse_opt = {
-		.flags = RZ_BIN_DWARF_PARSE_ABBREVS | RZ_BIN_DWARF_PARSE_INFO,
+	RzBinDWARFOption parse_opt = {
+		.flags = RZ_BIN_DWARF_ABBREVS | RZ_BIN_DWARF_INFO,
 	};
-	RzBinDwarf *dw = rz_bin_dwarf_parse(bf, &parse_opt);
+	RzBinDWARF *dw = rz_bin_dwarf_from_file(bf, &parse_opt);
 
 	mu_assert_eq(rz_bin_dwarf_abbrev_count(dw->abbrevs), 7, "Incorrect number of abbreviation");
 	mu_assert_eq(rz_vector_len(&dw->info->units), 1, "Incorrect number of info compilation units");
@@ -145,10 +145,10 @@ bool test_dwarf4_cpp_multiple_modules(void) {
 	RzBinFile *bf = rz_bin_open(bin, "bins/elf/dwarf4_many_comp_units.elf", &opt);
 	mu_assert_notnull(bf, "couldn't open file");
 
-	RzBinDwarfParseOptions parse_opt = {
-		.flags = RZ_BIN_DWARF_PARSE_ABBREVS | RZ_BIN_DWARF_PARSE_INFO,
+	RzBinDWARFOption parse_opt = {
+		.flags = RZ_BIN_DWARF_ABBREVS | RZ_BIN_DWARF_INFO,
 	};
-	RzBinDwarf *dw = rz_bin_dwarf_parse(bf, &parse_opt);
+	RzBinDWARF *dw = rz_bin_dwarf_from_file(bf, &parse_opt);
 
 	mu_assert_eq(rz_bin_dwarf_abbrev_count(dw->abbrevs), 37, "Incorrect number of abbreviation");
 	mu_assert_notnull(dw->info, "Failed parsing of debug_info");
@@ -359,10 +359,10 @@ bool test_dwarf2_big_endian(void) {
 	RzBinFile *bf = rz_bin_open(bin, "bins/elf/ppc64_sudoku_dwarf", &opt);
 	mu_assert_notnull(bf, "couldn't open file");
 
-	RzBinDwarfParseOptions parse_opt = {
-		.flags = RZ_BIN_DWARF_PARSE_ABBREVS | RZ_BIN_DWARF_PARSE_INFO,
+	RzBinDWARFOption parse_opt = {
+		.flags = RZ_BIN_DWARF_ABBREVS | RZ_BIN_DWARF_INFO,
 	};
-	RzBinDwarf *dw = rz_bin_dwarf_parse(bf, &parse_opt);
+	RzBinDWARF *dw = rz_bin_dwarf_from_file(bf, &parse_opt);
 
 	mu_assert_eq(rz_bin_dwarf_abbrev_count(dw->abbrevs), 108, "Incorrect number of abbreviation");
 	mu_assert_notnull(dw->info, "Failed parsing of debug_info");

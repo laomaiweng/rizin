@@ -1318,10 +1318,10 @@ bool test_dwarf3_aranges(void) {
 	RzBinFile *bf = rz_bin_open(bin, "bins/elf/dwarf3_many_comp_units.elf", &opt);
 	mu_assert_notnull(bf, "couldn't open file");
 
-	RzList *aranges = rz_bin_dwarf_aranges_from_file(bin->cur);
-	mu_assert_eq(rz_list_length(aranges), 2, "arange sets count");
+	RzBinDwarfARanges *aranges = rz_bin_dwarf_aranges_from_file(bin->cur);
+	mu_assert_eq(rz_list_length(aranges->list), 2, "arange sets count");
 
-	RzBinDwarfARangeSet *set = rz_list_get_n(aranges, 0);
+	RzBinDwarfARangeSet *set = rz_list_get_n(aranges->list, 0);
 	mu_assert_eq(set->unit_length, 60, "unit length");
 	mu_assert_eq(set->version, 2, "version");
 	mu_assert_eq(set->debug_info_offset, 0x0, "debug_info offset");
@@ -1335,7 +1335,7 @@ bool test_dwarf3_aranges(void) {
 	};
 	mu_assert_memeq((const ut8 *)set->aranges, (const ut8 *)&ref_0, sizeof(ref_0), "aranges contents");
 
-	set = rz_list_get_n(aranges, 1);
+	set = rz_list_get_n(aranges->list, 1);
 	mu_assert_eq(set->unit_length, 188, "unit length");
 	mu_assert_eq(set->version, 2, "version");
 	mu_assert_eq(set->debug_info_offset, 0x22e, "debug_info offset");
@@ -1357,7 +1357,7 @@ bool test_dwarf3_aranges(void) {
 	};
 	mu_assert_memeq((const ut8 *)set->aranges, (const ut8 *)&ref_1, sizeof(ref_1), "aranges contents");
 
-	rz_list_free(aranges);
+	rz_bin_dwarf_aranges_free(aranges);
 	rz_bin_free(bin);
 	rz_io_free(io);
 	mu_end;

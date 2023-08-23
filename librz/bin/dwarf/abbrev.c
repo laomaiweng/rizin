@@ -44,6 +44,7 @@ static void htup_RzBinDwarfAbbrevTable_free(HtUPKv *kv) {
 
 static void RzBinDwarfDebugAbbrevs_fini(RzBinDwarfDebugAbbrevs *abbrevs) {
 	ht_up_free(abbrevs->tbl_by_offset);
+	rz_buf_free(abbrevs->buffer);
 }
 
 static bool RzBinDwarfDebugAbbrevs_init(RzBinDwarfDebugAbbrevs *abbrevs) {
@@ -155,10 +156,11 @@ err:
  * \param buffer  Buffer to parse
  * \return RzBinDwarfDebugAbbrevs object
  */
-RZ_API RzBinDwarfDebugAbbrevs *rz_bin_dwarf_abbrev_from_buf(RZ_BORROW RZ_NONNULL RzBuffer *buffer) {
+RZ_API RzBinDwarfDebugAbbrevs *rz_bin_dwarf_abbrev_from_buf(RZ_OWN RZ_NONNULL RzBuffer *buffer) {
 	rz_return_val_if_fail(buffer, NULL);
 	RzBinDwarfDebugAbbrevs *abbrevs = RZ_NEW0(RzBinDwarfDebugAbbrevs);
 	RET_FALSE_IF_FAIL(abbrevs);
+	abbrevs->buffer = buffer;
 	if (!RzBinDwarfDebugAbbrevs_parse(abbrevs, buffer)) {
 		rz_bin_dwarf_abbrev_free(abbrevs);
 		return NULL;
@@ -175,9 +177,7 @@ RZ_API RZ_OWN RzBinDwarfDebugAbbrevs *rz_bin_dwarf_abbrev_from_file(RZ_BORROW RZ
 	rz_return_val_if_fail(bf, NULL);
 	RzBuffer *buf = get_section_buf(bf, "debug_abbrev");
 	RET_NULL_IF_FAIL(buf);
-	RzBinDwarfDebugAbbrevs *abbrevs = rz_bin_dwarf_abbrev_from_buf(buf);
-	rz_buf_free(buf);
-	return abbrevs;
+	return rz_bin_dwarf_abbrev_from_buf(buf);
 }
 
 /**

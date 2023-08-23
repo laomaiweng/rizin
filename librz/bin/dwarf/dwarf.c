@@ -95,11 +95,8 @@ RZ_API void rz_bin_dwarf_free(RZ_OWN RZ_NULLABLE RzBinDWARF *dw) {
 	rz_bin_dwarf_line_info_free(dw->lines);
 	rz_bin_dwarf_loclists_free(dw->loc);
 	RzBinDwarfRngListTable_free(dw->rng);
-	rz_list_free(dw->aranges);
+	rz_bin_dwarf_aranges_free(dw->aranges);
 	DebugAddr_free(dw->addr);
-	if (dw->str) {
-		rz_buf_free(dw->str->buffer);
-	}
-	free(dw->str);
+	RzBinDwarfDebugStr_free(dw->str);
 	free(dw);
 }

@@ -249,8 +249,7 @@ RZ_API RZ_OWN char *rz_core_bin_dwarf_loc_to_string(
 	return rz_strbuf_drain(sb);
 }
 
-RZ_API RZ_OWN char *rz_core_bin_dwarf_aranges_to_string(
-	RZ_NONNULL RZ_BORROW RzList /*<RzBinDwarfARangeSet *>*/ *aranges) {
+RZ_API RZ_OWN char *rz_core_bin_dwarf_aranges_to_string(RZ_NONNULL RZ_BORROW RzBinDwarfARanges *aranges) {
 	rz_return_val_if_fail(aranges, NULL);
 	RzStrBuf *sb = rz_strbuf_new(NULL);
 	if (!sb) {
@@ -259,7 +258,7 @@ RZ_API RZ_OWN char *rz_core_bin_dwarf_aranges_to_string(
 	rz_strbuf_append(sb, "\nContents of the .debug_aranges section:\n");
 	RzListIter *it;
 	RzBinDwarfARangeSet *set;
-	rz_list_foreach (aranges, it, set) {
+	rz_list_foreach (aranges->list, it, set) {
 		rz_strbuf_append(sb, "  Address Range Set\n");
 		rz_strbuf_appendf(sb, "   Unit Length:           0x%" PFMT64x "\n", set->unit_length);
 		rz_strbuf_appendf(sb, "   64bit:                 %s\n", rz_str_bool(set->is_64bit));

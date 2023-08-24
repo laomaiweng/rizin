@@ -69,7 +69,7 @@ static char *directory_parse_v5(RzBuffer *buffer, RzBinDwarfLineHeader *hdr, boo
 	RzBinDwarfFileEntryFormat *format = NULL;
 	rz_vector_foreach(&hdr->file_name_entry_formats, format) {
 		RzBinDwarfAttr attr = { 0 };
-		DwAttrOption in = {
+		DwAttrOption opt = {
 			.type = DW_ATTR_TYPE_FILE_ENTRY_FORMAT,
 			.format = format,
 			.line_hdr = hdr,
@@ -78,9 +78,9 @@ static char *directory_parse_v5(RzBuffer *buffer, RzBinDwarfLineHeader *hdr, boo
 				.big_endian = big_endian,
 			},
 		};
-		RET_NULL_IF_FAIL(RzBinDwarfAttr_parse(buffer, &attr, &in));
+		RET_NULL_IF_FAIL(RzBinDwarfAttr_parse(buffer, &attr, &opt));
 		if (format->content_type == DW_LNCT_path) {
-			path_name = attr.string.content;
+			path_name = (char *)rz_bin_dwarf_attr_get_string_const(&attr);
 		}
 	}
 	return path_name;
@@ -92,7 +92,7 @@ static RzBinDwarfFileEntry *RzBinDwarfFileEntry_parse_v5(RzBuffer *buffer, RzBin
 	RzBinDwarfFileEntryFormat *format = NULL;
 	rz_vector_foreach(&hdr->file_name_entry_formats, format) {
 		RzBinDwarfAttr attr = { 0 };
-		DwAttrOption in = {
+		DwAttrOption opt = {
 			.type = DW_ATTR_TYPE_FILE_ENTRY_FORMAT,
 			.format = format,
 			.line_hdr = hdr,
@@ -101,11 +101,11 @@ static RzBinDwarfFileEntry *RzBinDwarfFileEntry_parse_v5(RzBuffer *buffer, RzBin
 				.address_size = hdr->address_size,
 			},
 		};
-		ERR_IF_FAIL(RzBinDwarfAttr_parse(buffer, &attr, &in));
+		ERR_IF_FAIL(RzBinDwarfAttr_parse(buffer, &attr, &opt));
 		switch (format->content_type) {
 		case DW_LNCT_path:
 			ERR_IF_FAIL(attr.kind == DW_AT_KIND_STRING);
-			entry->path_name = attr.string.content;
+			entry->path_name = (char *)rz_bin_dwarf_attr_get_string_const(&attr);
 			break;
 		case DW_LNCT_directory_index:
 			ERR_IF_FAIL(attr.kind == DW_AT_KIND_UCONSTANT);

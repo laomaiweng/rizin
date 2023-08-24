@@ -34,7 +34,7 @@ RZ_IPI RzBinDwarfDebugAddr *DebugAddr_from_buf(RzBuffer *buffer) {
 
 RZ_IPI RzBinDwarfDebugAddr *DebugAddr_from_file(RzBinFile *bf) {
 	rz_return_val_if_fail(bf, NULL);
-	RzBuffer *buffer = get_section_buf(bf, ".debug_addr");
+	RzBuffer *buffer = get_section_buf(bf, "debug_addr");
 	RET_NULL_IF_FAIL(buffer);
 	return DebugAddr_from_buf(buffer);
 }

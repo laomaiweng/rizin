@@ -268,8 +268,8 @@ RZ_API RZ_OWN RzBinDwarfRngListTable *rz_bin_dwarf_rnglists_new_from_file(
 	RZ_BORROW RZ_NONNULL RzBinFile *bf,
 	RZ_BORROW RZ_NULLABLE RzBinDwarfDebugAddr *debug_addr) {
 	RET_NULL_IF_FAIL(bf);
-	RzBuffer *debug_ranges = get_section_buf(bf, ".debug_ranges");
-	RzBuffer *debug_rnglists = get_section_buf(bf, ".debug_rnglists");
+	RzBuffer *debug_ranges = get_section_buf(bf, "debug_ranges");
+	RzBuffer *debug_rnglists = get_section_buf(bf, "debug_rnglists");
 	if (!(debug_ranges || debug_rnglists)) {
 		return NULL;
 	}

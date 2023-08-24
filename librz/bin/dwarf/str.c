@@ -37,7 +37,7 @@ RZ_IPI RzBinDwarfDebugStr *RzBinDwarfDebugStr_from_buf(RZ_NONNULL RZ_OWN RzBuffe
 
 RZ_IPI RzBinDwarfDebugStr *RzBinDwarfDebugStr_from_file(RZ_NONNULL RZ_BORROW RzBinFile *bf) {
 	rz_return_val_if_fail(bf, NULL);
-	RzBuffer *buffer = get_section_buf(bf, ".debug_str");
+	RzBuffer *buffer = get_section_buf(bf, "debug_str");
 	RET_NULL_IF_FAIL(buffer);
 	return RzBinDwarfDebugStr_from_buf(buffer);
 }

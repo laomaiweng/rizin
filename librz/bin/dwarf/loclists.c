@@ -370,8 +370,8 @@ RZ_API RZ_OWN RzBinDwarfLocListTable *rz_bin_dwarf_loclists_new_from_file(
 	RZ_BORROW RZ_NONNULL RzBinFile *bf,
 	RZ_BORROW RZ_NULLABLE RzBinDwarfDebugAddr *debug_addr) {
 	RET_NULL_IF_FAIL(bf);
-	RzBuffer *debug_loc = get_section_buf(bf, ".debug_loc");
-	RzBuffer *debug_loclists = get_section_buf(bf, ".debug_loclists");
+	RzBuffer *debug_loc = get_section_buf(bf, "debug_loc");
+	RzBuffer *debug_loclists = get_section_buf(bf, "debug_loclists");
 	if (!(debug_loc || debug_loclists)) {
 		return NULL;
 	}

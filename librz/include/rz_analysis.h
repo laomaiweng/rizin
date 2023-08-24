@@ -2237,6 +2237,9 @@ RZ_API RZ_OWN RzCallable *rz_analysis_function_derive_type(RzAnalysis *analysis,
 RZ_API void rz_parse_pdb_types(const RzTypeDB *typedb, const RzPdb *pdb);
 
 /* DWARF */
+RZ_API void rz_analysis_dwarf_preprocess_info(
+	RZ_NONNULL RZ_BORROW const RzAnalysis *analysis,
+	RZ_NONNULL RZ_BORROW RzBinDWARF *dw);
 RZ_API void rz_analysis_dwarf_process_info(const RzAnalysis *analysis, RzBinDWARF *dw);
 RZ_API void rz_analysis_dwarf_integrate_functions(RzAnalysis *analysis, RzFlag *flags);
 RZ_API RzAnalysisDebugInfo *rz_analysis_debug_info_new();

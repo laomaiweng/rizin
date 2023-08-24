@@ -30,7 +30,7 @@ err:
 
 static RzBuffer *load_section(const char *name, Sdb *sdb) {
 	ut8 *bin = NULL;
-	char *bin64 = sdb_const_get(sdb, name, 0);
+	const char *bin64 = sdb_const_get(sdb, name, 0);
 	if (!bin64) {
 		return NULL;
 	}
@@ -38,7 +38,7 @@ static RzBuffer *load_section(const char *name, Sdb *sdb) {
 	if (!bin) {
 		return NULL;
 	}
-	return rz_buf_new_with_pointers(bin, strlen(bin64), true);
+	return rz_buf_new_with_pointers(bin, strlen((char *)bin), true);
 }
 
 #define TRY_SAVE_SECTION(name, X) \

@@ -590,7 +590,7 @@ RZ_API bool rz_project_migrate_v13_v14(RzProject *prj, RzSerializeResultInfo *re
 	Sdb *fn_db = sdb_ns(analysis_db, "functions", true);
 	sdb_foreach(fn_db, v13_v14_foreach_cb, fn_db);
 
-	Sdb *debug_info = sdb_ns(analysis_db, "debuginfo", true);
+	sdb_ns(analysis_db, "debuginfo", true);
 	return true;
 }
 

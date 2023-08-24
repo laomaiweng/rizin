@@ -2120,6 +2120,7 @@ RZ_API bool rz_serialize_analysis_debug_info_load(RZ_NONNULL Sdb *db, RZ_NONNULL
 			!rz_bin_dwarf_deserialize_sdb(analysis->debug_info->dw, dwarf_db)) {
 			return false;
 		}
+		rz_analysis_dwarf_preprocess_info(analysis, analysis->debug_info->dw);
 	}
 	return true;
 }
@@ -2154,6 +2155,7 @@ RZ_API bool rz_serialize_analysis_load(RZ_NONNULL Sdb *db, RZ_NONNULL RzAnalysis
 	SUB("classes", rz_serialize_analysis_classes_load(subdb, analysis, res));
 	SUB("types", rz_serialize_analysis_types_load(subdb, analysis, res));
 	SUB("callables", rz_serialize_analysis_callables_load(subdb, analysis, res));
+	SUB("debuginfo", rz_serialize_analysis_debug_info_load(subdb, analysis, res));
 
 	// All bbs have ref=1 now
 	SUB("functions", rz_serialize_analysis_functions_load(subdb, analysis, res));
@@ -2180,7 +2182,6 @@ RZ_API bool rz_serialize_analysis_load(RZ_NONNULL Sdb *db, RZ_NONNULL RzAnalysis
 	SUB("imports", rz_serialize_analysis_imports_load(subdb, analysis, res));
 	SUB("cc", rz_serialize_analysis_cc_load(subdb, analysis, res));
 	SUB("vars", rz_serialize_analysis_global_var_load(subdb, analysis, res));
-	SUB("debuginfo", rz_serialize_analysis_debug_info_load(subdb, analysis, res));
 
 	ret = true;
 beach:

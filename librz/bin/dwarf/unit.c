@@ -30,8 +30,6 @@ static bool RzBinDwarfDie_attrs_parse(
 	RzBinDwarfDie *die,
 	RzBinDwarfCompUnitHdr *hdr,
 	RzBinDwarfAbbrevDecl *abbrev_decl) {
-	const char *comp_dir = NULL;
-	ut64 line_info_offset = UT64_MAX;
 	RzBuffer *buffer = ctx->debug_info->buffer;
 
 	RZ_LOG_SILLY("0x%" PFMT64x ":\t%s%s [%" PFMT64d "] %s\n",

@@ -1359,7 +1359,7 @@ Sdb *analysis_ref_db() {
 	sdb_ns(db, "typelinks", true);
 	sdb_ns(db, "vars", true);
 
-	Sdb *debug_info = sdb_ns(db, "debuginfo", true);
+	sdb_ns(db, "debuginfo", true);
 
 	return db;
 }

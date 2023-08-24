@@ -35,11 +35,11 @@ static bool struct_union_children_parse(
 	RZ_BORROW RZ_IN RZ_NONNULL const RzBinDwarfDie *die,
 	RZ_BORROW RZ_OUT RZ_NONNULL RzBaseType *base_type);
 
-static bool function_parse(
+static bool function_from_die(
 	RZ_BORROW RZ_IN RZ_NONNULL Context *ctx,
 	RZ_BORROW RZ_IN RZ_NONNULL const RzBinDwarfDie *die);
 
-static void process_die(Context *ctx, RzBinDwarfDie *die);
+static void parse_die(Context *ctx, RzBinDwarfDie *die);
 
 /* For some languages linkage name is more informative like C++,
    but for Rust it's rubbish and the normal name is fine */
@@ -883,7 +883,7 @@ static RZ_OWN RzType *type_parse_from_offset_internal(
 	case DW_TAG_subroutine_type: {
 		RzCallable *callable = ht_up_find(ctx->analysis->debug_info->callable_by_offset, die->offset, NULL);
 		if (!callable) {
-			if (!function_parse(ctx, die)) {
+			if (!function_from_die(ctx, die)) {
 				goto end;
 			}
 			callable = ht_up_find(ctx->analysis->debug_info->callable_by_offset, die->offset, NULL);
@@ -1413,7 +1413,7 @@ static bool function_children_parse(Context *ctx, const RzBinDwarfDie *die, RzCa
 	rz_pvector_foreach (children, it) {
 		RzBinDwarfDie *child_die = *it;
 		if (child_die->depth != die->depth + 1) {
-			process_die(ctx, child_die);
+			parse_die(ctx, child_die);
 			continue;
 		}
 		RzAnalysisDwarfVariable v = { 0 };
@@ -1461,7 +1461,7 @@ static void function_free(RzAnalysisDwarfFunction *f) {
  * \brief Parse function,it's arguments, variables and
  *        save the information into the Sdb
  */
-static bool function_parse(
+static bool function_from_die(
 	RZ_BORROW RZ_IN RZ_NONNULL Context *ctx,
 	RZ_BORROW RZ_IN RZ_NONNULL const RzBinDwarfDie *die) {
 	if (ht_up_find(ctx->analysis->debug_info->function_by_offset, die->offset, NULL)) {
@@ -1540,6 +1540,9 @@ static bool function_parse(
 		fcn->demangle_name = ctx->analysis->binb.demangle(ctx->analysis->binb.bin, rz_bin_dwarf_lang_for_demangle(ctx->unit->language), fcn->link_name);
 	}
 	fcn->prefer_name = select_name(fcn->demangle_name, fcn->link_name, fcn->name, ctx->unit->language);
+	if (!fcn->prefer_name) {
+		fcn->prefer_name = fcn->name = anonymous_name("fcn", die->offset);
+	}
 
 	RzCallable *callable = rz_type_callable_new(fcn->prefer_name);
 	callable->ret = fcn->ret_type ? rz_type_clone(fcn->ret_type) : NULL;
@@ -1547,20 +1550,9 @@ static bool function_parse(
 	function_children_parse(ctx, die, callable, fcn);
 
 	RZ_LOG_DEBUG("DWARF function saving %s 0x%" PFMT64x " [0x%" PFMT64x "]\n", fcn->prefer_name, fcn->low_pc, die->offset);
-	if (fcn->prefer_name) {
-		if (!rz_type_func_update(ctx->analysis->typedb, callable)) {
-			RZ_LOG_ERROR("DWARF callable saving failed [typedb->callable] %s\n", fcn->prefer_name);
-			goto cleanup;
-		}
-		if (!ht_up_update(ctx->analysis->debug_info->callable_by_offset, die->offset, rz_type_callable_clone(callable))) {
-			RZ_LOG_ERROR("DWARF callable saving failed [0x%" PFMT64x "]\n", die->offset);
-			goto cleanup;
-		}
-	} else {
-		if (!ht_up_update(ctx->analysis->debug_info->callable_by_offset, die->offset, callable)) {
-			RZ_LOG_ERROR("DWARF callable saving failed [0x%" PFMT64x "]\n", die->offset);
-			goto cleanup;
-		}
+	if (!ht_up_update(ctx->analysis->debug_info->callable_by_offset, die->offset, callable)) {
+		RZ_LOG_ERROR("DWARF callable saving failed [0x%" PFMT64x "]\n", die->offset);
+		goto cleanup;
 	}
 	if (!ht_up_update(ctx->analysis->debug_info->function_by_offset, die->offset, fcn)) {
 		RZ_LOG_ERROR("DWARF function saving failed [0x%" PFMT64x "]\n", fcn->low_pc);
@@ -1577,6 +1569,60 @@ cleanup:
 	RZ_LOG_ERROR("Failed to parse function %s at 0x%" PFMT64x "\n", fcn->prefer_name, die->offset);
 	function_free(fcn);
 	return false;
+}
+
+static void parse_die(Context *ctx, RzBinDwarfDie *die) {
+	switch (die->tag) {
+	case DW_TAG_structure_type:
+	case DW_TAG_union_type:
+	case DW_TAG_class_type:
+	case DW_TAG_enumeration_type:
+	case DW_TAG_typedef:
+	case DW_TAG_base_type: {
+		RzBaseType_from_die(ctx, die);
+		break;
+	}
+	case DW_TAG_subprogram:
+		function_from_die(ctx, die);
+		break;
+	default:
+		break;
+	}
+}
+
+/**
+ * \brief Parses type and function information out of DWARF entries
+ *        and stores them to analysis->debug_info
+ * \param analysis RzAnalysis pointer
+ * \param dw RzBinDwarf pointer
+ */
+RZ_API void rz_analysis_dwarf_preprocess_info(
+	RZ_NONNULL RZ_BORROW const RzAnalysis *analysis,
+	RZ_NONNULL RZ_BORROW RzBinDWARF *dw) {
+	rz_return_if_fail(analysis && dw);
+	if (!dw->info) {
+		return;
+	}
+	analysis->debug_info->dwarf_register_mapping = dwarf_register_mapping_query(analysis->cpu, analysis->bits);
+	Context ctx = {
+		.analysis = analysis,
+		.dw = dw,
+		.unit = NULL,
+	};
+	RzBinDwarfCompUnit *unit;
+	rz_vector_foreach(&dw->info->units, unit) {
+		if (rz_vector_empty(&unit->dies)) {
+			continue;
+		}
+		ctx.unit = unit;
+		for (RzBinDwarfDie *die = rz_vector_head(&unit->dies);
+			(ut8 *)die < (ut8 *)unit->dies.a + unit->dies.len * unit->dies.elem_size;
+			(die->sibling > die->offset)
+				? die = ht_up_find(dw->info->die_by_offset, die->sibling, NULL)
+				: ++die) {
+			parse_die(&ctx, die);
+		}
+	}
 }
 
 #define SWAP(T, a, b) \
@@ -1596,7 +1642,7 @@ static void db_save_renamed(RzTypeDB *db, RzBaseType *b, char *name) {
 	rz_type_db_update_base_type(db, b);
 }
 
-static bool process_base_type(void *u, const void *k, const void *v) {
+static bool store_base_type(void *u, const void *k, const void *v) {
 	RzAnalysis *analysis = u;
 	const char *name = k;
 	RzPVector *types = (RzPVector *)v;
@@ -1640,54 +1686,27 @@ beach:
 	return true;
 }
 
-static void process_die(Context *ctx, RzBinDwarfDie *die) {
-	switch (die->tag) {
-	case DW_TAG_structure_type:
-	case DW_TAG_union_type:
-	case DW_TAG_class_type:
-	case DW_TAG_enumeration_type:
-	case DW_TAG_typedef:
-	case DW_TAG_base_type: {
-		RzBaseType_from_die(ctx, die);
-		break;
+static bool store_callable(void *u, ut64 k, const void *v) {
+	RzAnalysis *analysis = u;
+	RzCallable *c = (RzCallable *)v;
+	if (!rz_type_func_update(analysis->typedb, rz_type_callable_clone(c))) {
+		RZ_LOG_WARN("DWARF callable [%s] saving failed with offset: [0x%" PFMT64x "]\n",
+			c->name, k);
 	}
-	case DW_TAG_subprogram:
-		function_parse(ctx, die);
-		break;
-	default:
-		break;
-	}
+	return true;
 }
 
 /**
  * \brief Parses type and function information out of DWARF entries
- *        and stores them to analysis->debug_info
+ *        and stores them to analysis->debug_info and analysis->typedb
  * \param analysis RzAnalysis pointer
  * \param dw RzBinDwarf pointer
  */
 RZ_API void rz_analysis_dwarf_process_info(const RzAnalysis *analysis, RzBinDWARF *dw) {
 	rz_return_if_fail(analysis && dw);
-	analysis->debug_info->dwarf_register_mapping = dwarf_register_mapping_query(analysis->cpu, analysis->bits);
-	Context ctx = {
-		.analysis = analysis,
-		.dw = dw,
-		.unit = NULL,
-	};
-	RzBinDwarfCompUnit *unit;
-	rz_vector_foreach(&dw->info->units, unit) {
-		if (rz_vector_empty(&unit->dies)) {
-			continue;
-		}
-		ctx.unit = unit;
-		for (RzBinDwarfDie *die = rz_vector_head(&unit->dies);
-			(ut8 *)die < (ut8 *)unit->dies.a + unit->dies.len * unit->dies.elem_size;
-			(die->sibling > die->offset)
-				? die = ht_up_find(dw->info->die_by_offset, die->sibling, NULL)
-				: ++die) {
-			process_die(&ctx, die);
-		}
-	}
-	ht_pp_foreach(analysis->debug_info->base_type_by_name, process_base_type, (void *)analysis);
+	rz_analysis_dwarf_preprocess_info(analysis, dw);
+	ht_pp_foreach(analysis->debug_info->base_type_by_name, store_base_type, (void *)analysis);
+	ht_up_foreach(analysis->debug_info->callable_by_offset, store_callable, (void *)analysis);
 }
 
 static bool fixup_regoff_to_stackoff(RzAnalysis *a, RzAnalysisFunction *f,

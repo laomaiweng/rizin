@@ -25,13 +25,6 @@ RZ_IPI RzBinDwarfDebugStr *RzBinDwarfDebugStr_from_buf(RZ_NONNULL RZ_OWN RzBuffe
 		free(debug_str);
 		return NULL;
 	}
-	while (rz_buf_tell(buffer) < rz_buf_size(buffer)) {
-		ut64 offset = rz_buf_tell(buffer);
-		char *string = buf_get_string(buffer);
-		if (string) {
-			ht_up_update(debug_str->str_by_offset, offset, string);
-		}
-	}
 	return debug_str;
 }
 

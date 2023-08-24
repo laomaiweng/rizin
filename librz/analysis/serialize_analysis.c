@@ -677,11 +677,11 @@ RZ_API RZ_OWN RzAnalysisVar *rz_serialize_analysis_var_load(
 		goto beach;
 	}
 	ret = rz_analysis_function_set_var(fcn, &storage, vartype, 0, name);
-	ret->kind = k;
 	rz_type_free(vartype);
 	if (!ret) {
 		goto beach;
 	}
+	ret->kind = k;
 	if (comment) {
 		free(ret->comment);
 		ret->comment = strdup(comment);
@@ -2108,6 +2108,22 @@ RZ_API bool rz_serialize_analysis_debug_info_save(RZ_NONNULL Sdb *db, RZ_NONNULL
 	return true;
 }
 
+RZ_API bool rz_serialize_analysis_debug_info_load(RZ_NONNULL Sdb *db, RZ_NONNULL RzAnalysis *analysis, RZ_NULLABLE RzSerializeResultInfo *res) {
+	analysis->debug_info = rz_analysis_debug_info_new();
+	if (analysis->debug_info == NULL) {
+		return false;
+	}
+	Sdb *dwarf_db = sdb_ns(db, "dwarf", false);
+	if (dwarf_db) {
+		analysis->debug_info->dw = RZ_NEW0(RzBinDWARF);
+		if (analysis->debug_info->dw &&
+			!rz_bin_dwarf_deserialize_sdb(analysis->debug_info->dw, dwarf_db)) {
+			return false;
+		}
+	}
+	return true;
+}
+
 RZ_API void rz_serialize_analysis_save(RZ_NONNULL Sdb *db, RZ_NONNULL RzAnalysis *analysis) {
 	rz_serialize_analysis_xrefs_save(sdb_ns(db, "xrefs", true), analysis);
 	rz_serialize_analysis_blocks_save(sdb_ns(db, "blocks", true), analysis);
@@ -2164,6 +2180,7 @@ RZ_API bool rz_serialize_analysis_load(RZ_NONNULL Sdb *db, RZ_NONNULL RzAnalysis
 	SUB("imports", rz_serialize_analysis_imports_load(subdb, analysis, res));
 	SUB("cc", rz_serialize_analysis_cc_load(subdb, analysis, res));
 	SUB("vars", rz_serialize_analysis_global_var_load(subdb, analysis, res));
+	SUB("debuginfo", rz_serialize_analysis_debug_info_load(subdb, analysis, res));
 
 	ret = true;
 beach:

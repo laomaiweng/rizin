@@ -1274,7 +1274,8 @@ typedef struct {
 typedef enum {
 	RZ_BIN_DWARF_LINE_INFO_MASK_BASIC = 0x0, //< parse just the headers
 	RZ_BIN_DWARF_LINE_INFO_MASK_OPS = 0x1, //< decode and output all instructions
-	RZ_BIN_DWARF_LINE_INFO_MASK_LINES = 0x2 //< run instructions and output the resulting line infos
+	RZ_BIN_DWARF_LINE_INFO_MASK_LINES = 0x2, //< run instructions and output the resulting line infos
+	RZ_BIN_DWARF_LINE_INFO_MASK_LINES_ALL = 0x1 | 0x2,
 } RzBinDwarfLineInfoMask;
 
 typedef struct rz_bin_dwarf_arange_t {
@@ -1854,6 +1855,7 @@ RZ_API const ut8 *rz_bin_dwarf_block_data(const RzBinDwarfBlock *self);
 
 /// serialize
 RZ_API bool rz_bin_dwarf_serialize_sdb(const RzBinDWARF *dw, Sdb *sdb);
+RZ_API bool rz_bin_dwarf_deserialize_sdb(RzBinDWARF *dw, Sdb *sdb);
 
 #ifdef __cplusplus
 }

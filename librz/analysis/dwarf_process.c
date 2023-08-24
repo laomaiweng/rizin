@@ -1886,7 +1886,7 @@ static bool dwarf_integrate_function(void *user, const ut64 k, const void *value
 		rz_meta_set_string(analysis, RZ_META_TYPE_COMMENT, fn->low_pc, sig);
 	}
 
-	if (fn->prefer_name) {
+	if (fn->prefer_name && !rz_str_startswith(fn->prefer_name, "anonymous")) {
 		char *dwf_name = rz_str_newf("dbg.%s", fn->prefer_name);
 		rz_analysis_function_rename((RzAnalysisFunction *)afn, dwf_name);
 		free(dwf_name);
